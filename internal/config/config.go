@@ -44,10 +44,10 @@ func (c *Config) GetChannelByID(id string) (*channels.Channel, error) {
 	return ch, nil
 }
 
-func (c *Config) GetChannelAdapter() channels.ChannelMessageAdapter {
+func (c *Config) GetChannelAdapter() channels.ClientAdapter {
 	return redisAdapter
 }
 
-func (c *Config) GetClientAdapter() channels.ClientMessageAdapter {
+func (c *Config) GetClientAdapter() channels.MessageAdapter {
 	return redisAdapter
 }

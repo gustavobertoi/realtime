@@ -61,25 +61,35 @@ func channelById(c *gin.Context, conf *config.Config) {
 		channel.DeleteClient(client.ID)
 	}()
 
-	// Thread to subscribe from channel
+	// Write messages
 	go func() {
-		msgChannel := make(chan *channels.Message)
-		err := channel.Subscribe(client.ID, msgChannel)
+		ch := make(chan *channels.Message)
+		err := channel.Subscribe(client)
 		if err != nil {
 			log.Printf("error subscribing to channel %s from client %s", channelID, client.ID)
 		}
 		for {
-			msg := <-msgChannel
-			err := conn.WriteMessage(websocket.TextMessage, msg.Payload)
+			msg := <-ch
+			msgStr, err := msg.ToJSON()
+			if err != nil {
+				log.Printf("error deserializing msg %s from client %s - channel %s to json", msg.ID, msg.ClientID, msg.ChannelID)
+				return
+			}
+			err = conn.WriteMessage(websocket.TextMessage, []byte(msgStr))
 			if err != nil {
 				log.Printf("error writing msg %s to client %s from channel %s", msg.ID, client.ID, channelID)
+				return
 			}
 			log.Printf("channel %s sended a msg %s to client %s", channelID, msg.ID, client.ID)
-			channel.DeleteMessage(msg.ID)
+			err = client.DeleteMessage(msg)
+			if err != nil {
+				log.Printf("error deleting msg %s from store of channel %s client %s", msg.ID, msg.ChannelID, msg.ClientID)
+				return
+			}
 		}
 	}()
 
-	// Thread to subscribe from client messages (IO)
+	// Read messages
 	for {
 		messageType, payload, err := conn.ReadMessage()
 		if err != nil {

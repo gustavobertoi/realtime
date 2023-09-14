@@ -1,30 +1,22 @@
 package channels
 
-import (
-	"errors"
-	"fmt"
-	"log"
-)
-
-var (
-	errMaxLimitOfConnections        = errors.New("max limit of connections for this client")
-	errInvalidMaxLimitOfConnections = errors.New("invalid max limit of connections for this channel")
-)
+import "fmt"
 
 type ChannelConfig struct {
 	MaxOfConnections int `json:"max_of_connections"`
 }
 
 type Channel struct {
-	ID      string         `json:"id"`
-	Name    string         `json:"name"`
-	Config  *ChannelConfig `json:"config"`
+	adapter ClientAdapter
 	clients map[string]*Client
-	adapter ChannelMessageAdapter
+
+	ID     string         `json:"id"`
+	Name   string         `json:"name"`
+	Config *ChannelConfig `json:"config"`
 }
 
 func NewChannel(id string, name string, maxOfConnections int) (*Channel, error) {
-	ch := &Channel{
+	c := &Channel{
 		ID:   id,
 		Name: name,
 		Config: &ChannelConfig{
@@ -33,70 +25,68 @@ func NewChannel(id string, name string, maxOfConnections int) (*Channel, error) 
 		clients: make(map[string]*Client),
 		adapter: nil,
 	}
-	err := ch.validate()
+	err := c.validate()
 	if err != nil {
 		return nil, err
 	}
-	return ch, nil
+	return c, nil
 }
 
-func (ch *Channel) validate() error {
-	// load from a env/yaml
+func (c *Channel) validate() error {
 	const maxOfConnectionsPerChannel = 100
-	if ch.Config.MaxOfConnections > maxOfConnectionsPerChannel {
+	if c.Config.MaxOfConnections > maxOfConnectionsPerChannel {
 		return errInvalidMaxLimitOfConnections
 	}
 	return nil
 }
 
-func (ch *Channel) SetAdapter(adapter ChannelMessageAdapter) {
-	ch.adapter = adapter
-}
-
-func (ch *Channel) CreateClient(userAgent string, ip string) (*Client, error) {
-	if (len(ch.clients)) >= ch.Config.MaxOfConnections {
+func (c *Channel) CreateClient(userAgent string, ip string) (*Client, error) {
+	if (len(c.clients)) >= c.Config.MaxOfConnections {
 		return nil, errMaxLimitOfConnections
 	}
-	client := NewClient(userAgent, ip, ch.ID)
-	ch.clients[client.ID] = client
+	client := NewClient(userAgent, ip, c.ID)
+	c.clients[client.ID] = client
 	return client, nil
 }
 
-func (ch *Channel) DeleteClient(clientID string) {
-	if ch.HasClient(clientID) {
-		delete(ch.clients, clientID)
+func (c *Channel) DeleteClient(clientID string) {
+	if c.HasClient(clientID) {
+		delete(c.clients, clientID)
 	}
 }
 
-func (ch *Channel) HasClient(clientID string) bool {
-	return ch.clients[clientID] != nil
+func (c *Channel) HasClient(clientID string) bool {
+	return c.clients[clientID] != nil
 }
 
-func (ch *Channel) CountOfClients() int {
-	return len(ch.clients)
+func (c *Channel) CountOfClients() int {
+	return len(c.clients)
 }
 
-func (ch *Channel) BroadcastAll(m *Message) {
-	for _, client := range ch.clients {
+func (c *Channel) BroadcastAll(m *Message) map[string]error {
+	var errMap map[string]error = make(map[string]error)
+	for _, client := range c.clients {
 		if m.ClientID != client.ID {
 			err := client.Send(m)
 			if err != nil {
-				log.Printf("Failed to send message to client %s: %v", client.ID, err)
+				errMap[client.ID] = err
 			}
 		}
 	}
+	return errMap
 }
 
-func (ch *Channel) Subscribe(clientID string, msgChannel chan *Message) error {
-	if ch.adapter == nil {
-		return fmt.Errorf("channel %s does not contains a subscribe adapter method defined", ch.ID)
-	}
-	return ch.adapter.Subscribe(ch.ID, clientID, msgChannel)
+func (c *Channel) SetAdapter(a ClientAdapter) {
+	c.adapter = a
 }
 
-func (ch *Channel) DeleteMessage(messageID string) error {
-	if ch.adapter == nil {
-		return fmt.Errorf("channel %s does not contains a delete adapter method defined", ch.ID)
+func (c *Channel) Subscribe(client *Client) error {
+	if c.adapter == nil {
+		return fmt.Errorf("channel %s does not have client adapter setted", c.ID)
 	}
-	return ch.adapter.DeleteMessage(messageID)
+	err := c.adapter.Subscribe(client)
+	if err != nil {
+		return err
+	}
+	return nil
 }

@@ -3,7 +3,6 @@ package channels
 import (
 	"context"
 	"fmt"
-	"log"
 
 	"github.com/go-redis/redis/v8"
 )
@@ -11,44 +10,33 @@ import (
 var ctx = context.Background()
 
 type RedisAdapter struct {
-	ChannelMessageAdapter
-	ClientMessageAdapter
-	rdb       *redis.Client
-	mapOfMsgs map[string]string
+	ClientAdapter
+	MessageAdapter
+	client *redis.Client
 }
 
 func NewRedisAdapter(options redis.Options) *RedisAdapter {
 	return &RedisAdapter{
-		rdb:       redis.NewClient(&options),
-		mapOfMsgs: make(map[string]string),
+		client: redis.NewClient(&options),
 	}
 }
 
-func (adapter *RedisAdapter) hasMsg(msgID string) bool {
-	return adapter.mapOfMsgs[msgID] != ""
-}
-
-func (adapter *RedisAdapter) setMsg(msgID string) {
-	adapter.mapOfMsgs[msgID] = msgID
-}
-
-func (adapter *RedisAdapter) Send(m *Message) error {
-	if !adapter.hasMsg(m.ID) {
-		redisClient := adapter.rdb
-		msg, err := m.ToJSON()
-		if err != nil {
-			return err
-		}
-		redisClient.Publish(ctx, m.ChannelID, msg)
-		adapter.setMsg(m.ID)
+func (a *RedisAdapter) Send(message *Message) error {
+	msg, err := message.ToJSON()
+	if err != nil {
+		return err
 	}
+	a.client.Publish(ctx, message.ChannelID, msg)
 	return nil
 }
 
-func (adapter *RedisAdapter) Subscribe(channelID string, clientID string, msgChannel chan *Message) error {
-	redisClient := adapter.rdb
+func (a *RedisAdapter) Subscribe(client *Client) error {
 	go func() {
-		pubsub := redisClient.Subscribe(ctx, channelID)
+		redisClient := a.client
+		channelID := client.ChannelID
+		clientID := client.ID
+		ch := client.GetInternalChannel()
+		pubsub := redisClient.Subscribe(ctx, client.ChannelID)
 		defer pubsub.Close()
 		for {
 			msg, err := pubsub.ReceiveMessage(ctx)
@@ -61,16 +49,8 @@ func (adapter *RedisAdapter) Subscribe(channelID string, clientID string, msgCha
 				fmt.Printf("error parsing message from redis pubsub (channel %s - client %s): %v", channelID, clientID, err)
 				return
 			}
-			msgChannel <- m
+			ch <- m
 		}
 	}()
-	return nil
-}
-
-func (adapter *RedisAdapter) DeleteMessage(messageID string) error {
-	if adapter.hasMsg(messageID) {
-		log.Printf("deleting messing from redis adapter %s", messageID)
-		delete(adapter.mapOfMsgs, messageID)
-	}
 	return nil
 }
