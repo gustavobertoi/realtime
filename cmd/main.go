@@ -3,20 +3,20 @@ package main
 import (
 	"github.com/open-source-cloud/realtime/internal/config"
 	"github.com/open-source-cloud/realtime/internal/server"
-	log "github.com/sirupsen/logrus"
+	"github.com/open-source-cloud/realtime/pkg/log"
 )
 
 func main() {
-	log.SetFormatter(&log.JSONFormatter{})
+	logger := log.GetStaticInstance()
 
-	log.Print("Creating config")
+	logger.Print("Creating config")
 
 	config := config.NewConfig()
 
-	log.Print("Creating server")
+	logger.Print("Creating server")
 	server := server.NewServer(config)
 
-	log.Print("Starting http and ws server")
+	logger.Print("Starting http and ws server")
 	err := server.Start()
 	if err != nil {
 		panic(err)

@@ -8,14 +8,17 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/open-source-cloud/realtime/internal/channels"
 	"github.com/open-source-cloud/realtime/internal/config"
+	"github.com/open-source-cloud/realtime/pkg/log"
 	"github.com/open-source-cloud/realtime/pkg/uuid"
-	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 )
 
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
 }
+
+var systemLog = log.GetStaticInstance()
 
 func channelById(c *gin.Context, conf *config.Config) {
 	channelID := c.Param("channelId")
@@ -29,7 +32,7 @@ func channelById(c *gin.Context, conf *config.Config) {
 
 	clientStore, err := channel.ClientStore()
 	if err != nil {
-		log.Errorf("error getting channel %s client store", channelID)
+		systemLog.Errorf("error getting channel %s client store", channelID)
 		c.IndentedJSON(http.StatusInternalServerError, gin.H{
 			"message": "Internal server error",
 		})
@@ -37,7 +40,7 @@ func channelById(c *gin.Context, conf *config.Config) {
 	}
 	if clientStore.Count() >= channel.Config.MaxOfConnections {
 		err := fmt.Errorf("maximum connection limit for this channel %s has been established", channelID)
-		log.Error(err.Error())
+		systemLog.Error(err.Error())
 		c.IndentedJSON(http.StatusUnprocessableEntity, gin.H{
 			"message": err.Error(),
 		})
@@ -50,22 +53,20 @@ func channelById(c *gin.Context, conf *config.Config) {
 	userAgent, ip := GetIPAndUserAgent(c.Request)
 	client := channels.NewClient(clientID, userAgent, ip, channelID)
 	client.SetProducerAdapter(conf.GetClientProducerAdapter())
-	client.SetMessageStore(channels.NewMessageMemoryStore())
 	if clientStore.Put(client); err != nil {
-		log.Errorf("error setting client %s from channel %s into store, details: %v", clientID, channelID, err)
+		systemLog.Errorf("error setting client %s from channel %s into store, details: %v", clientID, channelID, err)
 		c.IndentedJSON(http.StatusInternalServerError, gin.H{
 			"message": "Internal server error",
 		})
 		return
 	}
 
-	logger := log.WithFields(log.Fields{
+	logger := log.CreateWithContext("channels_routes.go", logrus.Fields{
 		"channel_id": channelID,
 		"client_id":  clientID,
-		"context":    "channels_routes.go",
 	})
 
-	logger.Print("client created... upgrading connection to websocket...")
+	logger.Print("client created upgrading connection to websocket")
 
 	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
@@ -119,23 +120,13 @@ func channelById(c *gin.Context, conf *config.Config) {
 }
 
 func writeMessageToBuffer(msg *channels.Message, client *channels.Client, conn *websocket.Conn) error {
-	msgStore, err := client.MessageStore()
-	if err != nil {
-		return err
-	}
-	if msg.ClientID == client.ID {
-		return fmt.Errorf("not writing self messages to buffer")
-	}
-	if msgStore.Has(msg.ID) {
-		return fmt.Errorf("not writing duplicated messages to buffer")
-	}
-	msgStr, err := msg.ToJSON()
-	if err != nil {
-		return err
-	}
-	err = conn.WriteMessage(websocket.TextMessage, []byte(msgStr))
-	if err != nil {
-		return err
+	// TODO: Write self messages?
+	if msg.ClientID != client.ID {
+		msgStr, err := msg.ToJSON()
+		if err != nil {
+			return err
+		}
+		return conn.WriteMessage(websocket.TextMessage, []byte(msgStr))
 	}
 	return nil
 }
