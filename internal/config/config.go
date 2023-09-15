@@ -7,11 +7,13 @@ import (
 	"github.com/open-source-cloud/realtime/internal/channels"
 )
 
+var errChannelNotFound = errors.New("channel not found")
+
 var redisAdapter = channels.NewRedisAdapter(redis.Options{
 	Addr:     "localhost:6379",
 	Password: "realtime",
 })
-var errChannelNotFound = errors.New("channel not found")
+var clientMemoryStore = channels.NewClientMemoryStore()
 
 type Config struct {
 	Port        int
@@ -41,13 +43,15 @@ func (c *Config) GetChannelByID(id string) (*channels.Channel, error) {
 	if ch == nil {
 		return nil, errChannelNotFound
 	}
+	ch.SetConsumerAdapter(c.GetChannelConsumerAdapter())
+	ch.SetClientStore(clientMemoryStore)
 	return ch, nil
 }
 
-func (c *Config) GetChannelAdapter() channels.ClientAdapter {
+func (c *Config) GetChannelConsumerAdapter() channels.ConsumerAdapter {
 	return redisAdapter
 }
 
-func (c *Config) GetClientAdapter() channels.MessageAdapter {
+func (c *Config) GetClientProducerAdapter() channels.ProducerAdapter {
 	return redisAdapter
 }

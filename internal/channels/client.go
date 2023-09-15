@@ -2,71 +2,66 @@ package channels
 
 import (
 	"fmt"
-
-	"github.com/open-source-cloud/realtime/pkg/uuid"
 )
 
 type Client struct {
-	adapter MessageAdapter
-	store   MessageStore
-	ch      chan *Message
-
 	ID        string `json:"id"`
-	ChannelID string `json:"channel_id"`
-	UserAgent string `json:"user_agent"`
-	IPAddress string `json:"ip_address"`
+	ChannelID string `json:"channelId"`
+	UserAgent string `json:"userAgent"`
+	IPAddress string `json:"ipAddress"`
+
+	producerAdapter ProducerAdapter
+	messageStore    MessageStore
+	ch              chan *Message
 }
 
-func NewClient(userAgent string, ipAddress string, channelID string) *Client {
+func NewClient(clientID string, userAgent string, ipAddress string, channelID string) *Client {
 	client := &Client{
-		ID:        uuid.NewUUID(),
-		ChannelID: channelID,
-		UserAgent: userAgent,
-		IPAddress: ipAddress,
-		adapter:   nil,
-		store:     nil,
-		ch:        make(chan *Message),
+		ID:              clientID,
+		ChannelID:       channelID,
+		UserAgent:       userAgent,
+		IPAddress:       ipAddress,
+		producerAdapter: nil,
+		messageStore:    nil,
+		ch:              make(chan *Message),
 	}
 	return client
 }
 
-func (c *Client) SetAdapter(adapter MessageAdapter) {
-	c.adapter = adapter
+func (c *Client) SetProducerAdapter(adapter ProducerAdapter) {
+	c.producerAdapter = adapter
 }
 
-func (c *Client) SetStore(store MessageStore) {
-	c.store = store
+func (c *Client) SetMessageStore(store MessageStore) {
+	c.messageStore = store
 }
 
 func (c *Client) Send(msg *Message) error {
-	if c.adapter == nil {
+	if c.producerAdapter == nil {
 		return fmt.Errorf("client %s from channel %s does not contains message adapter", c.ID, c.ChannelID)
 	}
-	if c.store == nil {
+	if c.messageStore == nil {
 		return fmt.Errorf("client %s from channel %s does not contains message store", c.ID, c.ChannelID)
 	}
-	if c.store.Has(msg.ID) {
+	if c.messageStore.Has(msg.ID) {
 		return errMessageAlreadyPublished
 	}
-	err := c.adapter.Send(msg)
+	err := c.producerAdapter.Send(msg)
 	if err != nil {
 		return err
 	}
-	c.store.Put(msg)
+	msg.SetAsPublished()
+	c.messageStore.Put(msg)
 	return nil
 }
 
-func (c *Client) GetInternalChannel() chan *Message {
+func (c *Client) GetChan() chan *Message {
 	return c.ch
 }
 
-func (c *Client) ProcessMessage(m *Message) {
-	m.SetAsPublished()
-}
-
-func (c *Client) DeleteMessage(m *Message) error {
-	if c.store == nil {
-		return fmt.Errorf("client %s from channel %s does not contains message store", c.ID, c.ChannelID)
+func (c *Client) MessageStore() (MessageStore, error) {
+	if c.messageStore == nil {
+		return nil, fmt.Errorf("client %s from channel %s does not contains message store", c.ID, c.ChannelID)
 	}
-	return c.store.Delete(m)
+	return c.messageStore, nil
 }

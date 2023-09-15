@@ -9,14 +9,14 @@ import (
 
 type Message struct {
 	ID          string     `json:"id"`
-	ChannelID   string     `json:"channel_id"`
-	ClientID    string     `json:"client_id"`
-	Payload     []byte     `json:"payload"`
-	CreatedAt   time.Time  `json:"created_at"`
-	PublishedAt *time.Time `json:"published_at"`
+	ChannelID   string     `json:"channelId"`
+	ClientID    string     `json:"clientId"`
+	Payload     string     `json:"payload"`
+	CreatedAt   time.Time  `json:"createdAt"`
+	PublishedAt *time.Time `json:"publishedAt"`
 }
 
-func NewMessage(channelID string, clientID string, payload []byte) *Message {
+func NewMessage(channelID string, clientID string, payload string) *Message {
 	id := uuid.NewUUID()
 	return &Message{
 		ID:          id,

@@ -1,13 +1,15 @@
 package server
 
 import (
-	"log"
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	"github.com/open-source-cloud/realtime/internal/channels"
 	"github.com/open-source-cloud/realtime/internal/config"
+	"github.com/open-source-cloud/realtime/pkg/uuid"
+	log "github.com/sirupsen/logrus"
 )
 
 var upgrader = websocket.Upgrader{
@@ -16,39 +18,58 @@ var upgrader = websocket.Upgrader{
 }
 
 func channelById(c *gin.Context, conf *config.Config) {
-	channelID := c.Param("channel_id")
-	if channelID == "" {
-		c.IndentedJSON(http.StatusBadRequest, gin.H{
-			"message": "missing channel_id",
-		})
-		return
-	}
-
+	channelID := c.Param("channelId")
 	channel, err := conf.GetChannelByID(channelID)
 	if err != nil {
 		c.IndentedJSON(http.StatusNotFound, gin.H{
-			"message": "channel not found",
+			"message": "Channel not found",
 		})
 		return
 	}
 
-	client, err := channel.CreateClient(GetIPAndUserAgent(c.Request))
+	clientStore, err := channel.ClientStore()
 	if err != nil {
-		log.Printf("error adding client %s to channel %s, err: %v", client.ID, channel.ID, err)
-		c.IndentedJSON(http.StatusNotFound, gin.H{
+		log.Errorf("error getting channel %s client store", channelID)
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{
+			"message": "Internal server error",
+		})
+		return
+	}
+	if clientStore.Count() >= channel.Config.MaxOfConnections {
+		err := fmt.Errorf("maximum connection limit for this channel %s has been established", channelID)
+		log.Error(err.Error())
+		c.IndentedJSON(http.StatusUnprocessableEntity, gin.H{
 			"message": err.Error(),
 		})
+	}
+
+	clientID := c.Query("clientId")
+	if clientID == "" {
+		clientID = uuid.NewUUID()
+	}
+	userAgent, ip := GetIPAndUserAgent(c.Request)
+	client := channels.NewClient(clientID, userAgent, ip, channelID)
+	client.SetProducerAdapter(conf.GetClientProducerAdapter())
+	client.SetMessageStore(channels.NewMessageMemoryStore())
+	if clientStore.Put(client); err != nil {
+		log.Errorf("error setting client %s from channel %s into store, details: %v", clientID, channelID, err)
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{
+			"message": "Internal server error",
+		})
 		return
 	}
 
-	channel.SetAdapter(conf.GetChannelAdapter())
-	client.SetAdapter(conf.GetClientAdapter())
+	logger := log.WithFields(log.Fields{
+		"channel_id": channelID,
+		"client_id":  clientID,
+		"context":    "channels_routes.go",
+	})
 
-	log.Printf("client %s has been connected to channel %s", client.ID, channel.ID)
+	logger.Print("client created... upgrading connection to websocket...")
 
 	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
-		log.Println("failed to set websocket upgrade: ", err)
+		logger.Errorf("failed to set websocket upgrade: %v", err)
 		c.IndentedJSON(http.StatusNotFound, gin.H{
 			"message": err.Error(),
 		})
@@ -56,35 +77,26 @@ func channelById(c *gin.Context, conf *config.Config) {
 	}
 
 	defer func() {
-		log.Printf("Deleting client %s from channel %s", client.ID, channelID)
+		logger.Print("deleting client from channel")
 		conn.Close()
-		channel.DeleteClient(client.ID)
+		clientStore.Delete(client)
 	}()
 
 	// Write messages
 	go func() {
-		ch := make(chan *channels.Message)
-		err := channel.Subscribe(client)
-		if err != nil {
-			log.Printf("error subscribing to channel %s from client %s", channelID, client.ID)
+		ch := client.GetChan()
+		if channel.Subscribe(client); err != nil {
+			logger.Panicf("error subscribing client on channel")
+			return
 		}
 		for {
 			msg := <-ch
-			msgStr, err := msg.ToJSON()
+			logger.Infof("writing message %s to buffer", msg.ID)
+			err := writeMessageToBuffer(msg, client, conn)
 			if err != nil {
-				log.Printf("error deserializing msg %s from client %s - channel %s to json", msg.ID, msg.ClientID, msg.ChannelID)
-				return
-			}
-			err = conn.WriteMessage(websocket.TextMessage, []byte(msgStr))
-			if err != nil {
-				log.Printf("error writing msg %s to client %s from channel %s", msg.ID, client.ID, channelID)
-				return
-			}
-			log.Printf("channel %s sended a msg %s to client %s", channelID, msg.ID, client.ID)
-			err = client.DeleteMessage(msg)
-			if err != nil {
-				log.Printf("error deleting msg %s from store of channel %s client %s", msg.ID, msg.ChannelID, msg.ClientID)
-				return
+				logger.Errorf("error writing message %s to buffer, details: %v", msg.ID, err)
+			} else {
+				logger.Infof("message %s has been sent to client", msg.ID)
 			}
 		}
 	}()
@@ -93,13 +105,37 @@ func channelById(c *gin.Context, conf *config.Config) {
 	for {
 		messageType, payload, err := conn.ReadMessage()
 		if err != nil {
-			log.Printf("error reading client %s msg from channel %s", client.ID, channelID)
-			return
+			logger.Errorf("error reading message from buffer: %v", err)
+			break
 		}
-		msg := channels.NewMessage(channelID, client.ID, payload)
-		log.Printf("client %s is broadcasting a msg %s to channel %s server", client.ID, msg.ID, channelID)
+		msg := channels.NewMessage(channelID, client.ID, string(payload))
+		logger.Printf("broadcasting message %s to all clients", msg.ID)
 		if messageType == websocket.TextMessage {
-			channel.BroadcastAll(msg)
+			for _, err := range channel.BroadcastToAllClients(msg) {
+				logger.Errorf("error broadcasting message %s, details: %v", msg.ID, err)
+			}
 		}
 	}
+}
+
+func writeMessageToBuffer(msg *channels.Message, client *channels.Client, conn *websocket.Conn) error {
+	msgStore, err := client.MessageStore()
+	if err != nil {
+		return err
+	}
+	if msg.ClientID == client.ID {
+		return fmt.Errorf("not writing self messages to buffer")
+	}
+	if msgStore.Has(msg.ID) {
+		return fmt.Errorf("not writing duplicated messages to buffer")
+	}
+	msgStr, err := msg.ToJSON()
+	if err != nil {
+		return err
+	}
+	err = conn.WriteMessage(websocket.TextMessage, []byte(msgStr))
+	if err != nil {
+		return err
+	}
+	return nil
 }

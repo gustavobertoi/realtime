@@ -3,16 +3,16 @@ package channels
 import "fmt"
 
 type ChannelConfig struct {
-	MaxOfConnections int `json:"max_of_connections"`
+	MaxOfConnections int `json:"maxOfConnections"`
 }
 
 type Channel struct {
-	adapter ClientAdapter
-	clients map[string]*Client
-
 	ID     string         `json:"id"`
 	Name   string         `json:"name"`
 	Config *ChannelConfig `json:"config"`
+
+	consumer    ConsumerAdapter
+	clientStore ClientStore
 }
 
 func NewChannel(id string, name string, maxOfConnections int) (*Channel, error) {
@@ -22,8 +22,8 @@ func NewChannel(id string, name string, maxOfConnections int) (*Channel, error) 
 		Config: &ChannelConfig{
 			MaxOfConnections: maxOfConnections,
 		},
-		clients: make(map[string]*Client),
-		adapter: nil,
+		consumer:    nil,
+		clientStore: nil,
 	}
 	err := c.validate()
 	if err != nil {
@@ -40,53 +40,42 @@ func (c *Channel) validate() error {
 	return nil
 }
 
-func (c *Channel) CreateClient(userAgent string, ip string) (*Client, error) {
-	if (len(c.clients)) >= c.Config.MaxOfConnections {
-		return nil, errMaxLimitOfConnections
+func (c *Channel) BroadcastToAllClients(m *Message) []error {
+	var errs []error
+	store, err := c.ClientStore()
+	if err != nil {
+		errs = append(errs, err)
+		return errs
 	}
-	client := NewClient(userAgent, ip, c.ID)
-	c.clients[client.ID] = client
-	return client, nil
-}
-
-func (c *Channel) DeleteClient(clientID string) {
-	if c.HasClient(clientID) {
-		delete(c.clients, clientID)
-	}
-}
-
-func (c *Channel) HasClient(clientID string) bool {
-	return c.clients[clientID] != nil
-}
-
-func (c *Channel) CountOfClients() int {
-	return len(c.clients)
-}
-
-func (c *Channel) BroadcastAll(m *Message) map[string]error {
-	var errMap map[string]error = make(map[string]error)
-	for _, client := range c.clients {
+	for _, client := range store.All() {
 		if m.ClientID != client.ID {
 			err := client.Send(m)
 			if err != nil {
-				errMap[client.ID] = err
+				errs = append(errs, err)
 			}
 		}
 	}
-	return errMap
+	return errs
 }
 
-func (c *Channel) SetAdapter(a ClientAdapter) {
-	c.adapter = a
+func (c *Channel) SetConsumerAdapter(consumer ConsumerAdapter) {
+	c.consumer = consumer
+}
+
+func (c *Channel) SetClientStore(store ClientStore) {
+	c.clientStore = store
 }
 
 func (c *Channel) Subscribe(client *Client) error {
-	if c.adapter == nil {
-		return fmt.Errorf("channel %s does not have client adapter setted", c.ID)
+	if c.consumer == nil {
+		return fmt.Errorf("channel %s does not contains consumer adapter defined", c.ID)
 	}
-	err := c.adapter.Subscribe(client)
-	if err != nil {
-		return err
+	return c.consumer.Subscribe(client)
+}
+
+func (c *Channel) ClientStore() (ClientStore, error) {
+	if c.clientStore == nil {
+		return nil, fmt.Errorf("channel %s does not contains an client store defined", c.ID)
 	}
-	return nil
+	return c.clientStore, nil
 }
