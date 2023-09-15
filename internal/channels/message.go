@@ -8,23 +8,21 @@ import (
 )
 
 type Message struct {
-	ID          string     `json:"id"`
-	ChannelID   string     `json:"channelId"`
-	ClientID    string     `json:"clientId"`
-	Payload     string     `json:"payload"`
-	CreatedAt   time.Time  `json:"createdAt"`
-	PublishedAt *time.Time `json:"publishedAt"`
+	ID        string    `json:"id"`
+	ChannelID string    `json:"channelId"`
+	ClientID  string    `json:"clientId"`
+	Payload   string    `json:"payload"`
+	CreatedAt time.Time `json:"createdAt"`
 }
 
 func NewMessage(channelID string, clientID string, payload string) *Message {
 	id := uuid.NewUUID()
 	return &Message{
-		ID:          id,
-		ChannelID:   channelID,
-		ClientID:    clientID,
-		Payload:     payload,
-		CreatedAt:   time.Now(),
-		PublishedAt: nil,
+		ID:        id,
+		ChannelID: channelID,
+		ClientID:  clientID,
+		Payload:   payload,
+		CreatedAt: time.Now(),
 	}
 }
 
@@ -36,11 +34,6 @@ func FromJSON(message string) (*Message, error) {
 		return nil, err
 	}
 	return &m, nil
-}
-
-func (m *Message) SetAsPublished() {
-	now := time.Now()
-	m.PublishedAt = &now
 }
 
 func (m *Message) ToJSON() (string, error) {
