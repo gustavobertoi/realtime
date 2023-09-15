@@ -42,12 +42,12 @@ func (c *Channel) validate() error {
 
 func (c *Channel) BroadcastToAllClients(m *Message) []error {
 	var errs []error
-	store, err := c.ClientStore()
+	clientStore, err := c.ClientStore()
 	if err != nil {
 		errs = append(errs, err)
 		return errs
 	}
-	for _, client := range store.All() {
+	for _, client := range clientStore.All() {
 		if m.ClientID != client.ID {
 			err := client.Send(m)
 			if err != nil {
