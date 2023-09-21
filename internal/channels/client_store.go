@@ -41,10 +41,10 @@ func (cs *ClientStore) Has(id string) bool {
 	return cs.store.Has(id)
 }
 
-func (cs *ClientStore) Put(c *Client) error {
-	return cs.store.Set(c.ID, c)
+func (cs *ClientStore) Put(c *Client) {
+	cs.store.Set(c.ID, c)
 }
 
-func (cs *ClientStore) Delete(c *Client) error {
-	return cs.store.Delete(c.ID)
+func (cs *ClientStore) Delete(c *Client) {
+	cs.store.Delete(c.ID)
 }

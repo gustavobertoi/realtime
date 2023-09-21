@@ -5,22 +5,25 @@ type ChannelConfig struct {
 }
 
 type Channel struct {
-	ID       string         `json:"id"`
-	Name     string         `json:"name"`
-	Config   *ChannelConfig `json:"config"`
-	Store    *ClientStore
-	Consumer ConsumerAdapter
+	producer ProducerAdapter
+	consumer ConsumerAdapter
+
+	ID     string         `json:"id"`
+	Name   string         `json:"name"`
+	Config *ChannelConfig `json:"config"`
+	Store  *ClientStore
 }
 
-func NewChannel(id string, name string, maxOfChannelConnections int, consumer ConsumerAdapter) (*Channel, error) {
+func NewChannel(id string, name string, maxOfChannelConnections int, consumer ConsumerAdapter, producer ProducerAdapter) (*Channel, error) {
 	c := &Channel{
 		ID:   id,
 		Name: name,
 		Config: &ChannelConfig{
 			MaxOfChannelConnections: maxOfChannelConnections,
 		},
-		Consumer: consumer,
 		Store:    NewClientStore(),
+		consumer: consumer,
+		producer: producer,
 	}
 	err := c.validate()
 	if err != nil {
@@ -37,15 +40,14 @@ func (c *Channel) validate() error {
 	return nil
 }
 
-func (c *Channel) BroadcastMessage(m *Message) map[string]error {
-	errs := make(map[string]error)
-	for _, client := range c.Store.All() {
-		if m.ClientID != client.ID {
-			err := client.Send(m)
-			if err != nil {
-				errs[client.ID] = err
-			}
-		}
-	}
-	return errs
+func (c *Channel) IsMaxOfConnections() bool {
+	return c.Store.Count() >= c.Config.MaxOfChannelConnections
+}
+
+func (c *Channel) BroadcastMessage(m *Message) error {
+	return c.producer.Send(m)
+}
+
+func (c *Channel) Subscribe(client *Client) error {
+	return c.consumer.Subscribe(client)
 }
