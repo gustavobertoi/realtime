@@ -37,14 +37,12 @@ func (m *MemoryStore) Has(key string) bool {
 	return m.data[key] != nil
 }
 
-func (m *MemoryStore) Set(key string, data interface{}) error {
-	m.data[key] = m
-	return nil
+func (m *MemoryStore) Set(key string, value interface{}) {
+	m.data[key] = value
 }
 
-func (m *MemoryStore) Delete(key string) error {
+func (m *MemoryStore) Delete(key string) {
 	if m.Has(key) {
 		delete(m.data, key)
 	}
-	return nil
 }
