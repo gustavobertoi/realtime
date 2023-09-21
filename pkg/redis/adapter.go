@@ -4,13 +4,17 @@ import (
 	"context"
 
 	"github.com/go-redis/redis/v8"
+	"github.com/open-source-cloud/realtime/internal/channels"
 )
 
 type RedisConfig struct {
-	URL string
+	Addr     string
+	Password string
 }
 
 type RedisAdapter struct {
+	channels.ProducerAdapter
+	channels.ConsumerAdapter
 	client *redis.Client
 	ctx    context.Context
 }
@@ -18,7 +22,8 @@ type RedisAdapter struct {
 func NewRedisAdapter(ctx context.Context, c *RedisConfig) *RedisAdapter {
 	return &RedisAdapter{
 		client: redis.NewClient(&redis.Options{
-			Addr: c.URL,
+			Addr:     c.Addr,
+			Password: c.Password,
 		}),
 		ctx: ctx,
 	}

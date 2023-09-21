@@ -5,9 +5,11 @@ import (
 	"time"
 
 	"github.com/go-redis/redis/v8"
+	"github.com/open-source-cloud/realtime/internal/channels"
 )
 
-func (ra *RedisAdapter) Subscribe(topic string, callback func(value interface{})) error {
+func (ra *RedisAdapter) Subscribe(client *channels.Client) error {
+	topic := client.ChannelID
 	go func() {
 		for {
 			streamArgs := redis.XReadArgs{
@@ -22,7 +24,12 @@ func (ra *RedisAdapter) Subscribe(topic string, callback func(value interface{})
 			stream := streams[0]
 			for _, xMsg := range stream.Messages {
 				for _, value := range xMsg.Values {
-					callback(value)
+					rawMsg := value.(string)
+					msg, err := channels.MessageFromJSON(rawMsg)
+					if err != nil {
+						log.Panicf("error deserializing message from json, topic %s, err: %v", topic, err)
+					}
+					client.MessageChan() <- msg
 				}
 			}
 			time.Sleep(1 * time.Second)
