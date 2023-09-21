@@ -1,29 +1,26 @@
 package channels
 
-import "fmt"
-
 type ChannelConfig struct {
-	MaxOfConnections int `json:"maxOfConnections"`
+	MaxOfChannelConnections int `json:"max_of_channels_connections"`
 }
 
 type Channel struct {
-	ID     string         `json:"id"`
-	Name   string         `json:"name"`
-	Config *ChannelConfig `json:"config"`
-
-	consumer    ConsumerAdapter
-	clientStore ClientStore
+	ID       string         `json:"id"`
+	Name     string         `json:"name"`
+	Config   *ChannelConfig `json:"config"`
+	Store    *ClientStore
+	Consumer ConsumerAdapter
 }
 
-func NewChannel(id string, name string, maxOfConnections int) (*Channel, error) {
+func NewChannel(id string, name string, maxOfChannelConnections int, consumer ConsumerAdapter) (*Channel, error) {
 	c := &Channel{
 		ID:   id,
 		Name: name,
 		Config: &ChannelConfig{
-			MaxOfConnections: maxOfConnections,
+			MaxOfChannelConnections: maxOfChannelConnections,
 		},
-		consumer:    nil,
-		clientStore: nil,
+		Consumer: consumer,
+		Store:    NewClientStore(),
 	}
 	err := c.validate()
 	if err != nil {
@@ -34,48 +31,21 @@ func NewChannel(id string, name string, maxOfConnections int) (*Channel, error) 
 
 func (c *Channel) validate() error {
 	const maxOfConnectionsPerChannel = 100
-	if c.Config.MaxOfConnections > maxOfConnectionsPerChannel {
+	if c.Config.MaxOfChannelConnections > maxOfConnectionsPerChannel {
 		return errInvalidMaxLimitOfConnections
 	}
 	return nil
 }
 
-func (c *Channel) BroadcastToAllClients(m *Message) []error {
-	var errs []error
-	clientStore, err := c.ClientStore()
-	if err != nil {
-		errs = append(errs, err)
-		return errs
-	}
-	for _, client := range clientStore.All() {
+func (c *Channel) BroadcastMessage(m *Message) map[string]error {
+	errs := make(map[string]error)
+	for _, client := range c.Store.All() {
 		if m.ClientID != client.ID {
 			err := client.Send(m)
 			if err != nil {
-				errs = append(errs, err)
+				errs[client.ID] = err
 			}
 		}
 	}
 	return errs
-}
-
-func (c *Channel) SetConsumerAdapter(consumer ConsumerAdapter) {
-	c.consumer = consumer
-}
-
-func (c *Channel) SetClientStore(store ClientStore) {
-	c.clientStore = store
-}
-
-func (c *Channel) Subscribe(client *Client) error {
-	if c.consumer == nil {
-		return fmt.Errorf("channel %s does not contains consumer adapter defined", c.ID)
-	}
-	return c.consumer.Subscribe(client)
-}
-
-func (c *Channel) ClientStore() (ClientStore, error) {
-	if c.clientStore == nil {
-		return nil, fmt.Errorf("channel %s does not contains an client store defined", c.ID)
-	}
-	return c.clientStore, nil
 }

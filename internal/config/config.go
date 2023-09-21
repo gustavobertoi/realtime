@@ -1,19 +1,19 @@
 package config
 
 import (
+	"context"
 	"errors"
 
-	"github.com/go-redis/redis/v8"
 	"github.com/open-source-cloud/realtime/internal/channels"
+	redis_adapter "github.com/open-source-cloud/realtime/pkg/redis"
 )
 
 var errChannelNotFound = errors.New("channel not found")
 
-var redisAdapter = channels.NewRedisAdapter(redis.Options{
-	Addr:     "localhost:6379",
-	Password: "realtime",
+var redisAdapter = redis_adapter.NewRedisAdapter(context.Background(), &redis_adapter.RedisConfig{
+	URL: "redis://default:realtime@localhost:6379",
 })
-var clientMemoryStore = channels.NewClientMemoryStore()
+var channelsRedisAdapter = channels.NewChannelsRedisAdapter(redisAdapter)
 
 type Config struct {
 	Port        int
@@ -31,7 +31,7 @@ func NewConfig() *Config {
 
 // TODO: Refactor this function to load from yaml
 func (c *Config) loadChannelsFromYaml() {
-	var eventsChannel, err = channels.NewChannel("742fc7fe-1527-4184-8945-10b30bf01347", "events", 2)
+	var eventsChannel, err = channels.NewChannel("742fc7fe-1527-4184-8945-10b30bf01347", "events", 2, channelsRedisAdapter)
 	if (err) != nil {
 		panic(err)
 	}
@@ -43,15 +43,5 @@ func (c *Config) GetChannelByID(id string) (*channels.Channel, error) {
 	if ch == nil {
 		return nil, errChannelNotFound
 	}
-	ch.SetConsumerAdapter(c.GetChannelConsumerAdapter())
-	ch.SetClientStore(clientMemoryStore)
 	return ch, nil
-}
-
-func (c *Config) GetChannelConsumerAdapter() channels.ConsumerAdapter {
-	return redisAdapter
-}
-
-func (c *Config) GetClientProducerAdapter() channels.ProducerAdapter {
-	return redisAdapter
 }

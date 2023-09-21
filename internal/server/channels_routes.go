@@ -30,15 +30,7 @@ func channelById(c *gin.Context, conf *config.Config) {
 		return
 	}
 
-	clientStore, err := channel.ClientStore()
-	if err != nil {
-		systemLog.Errorf("error getting channel %s client store", channelID)
-		c.IndentedJSON(http.StatusInternalServerError, gin.H{
-			"message": "Internal server error",
-		})
-		return
-	}
-	if clientStore.Count() >= channel.Config.MaxOfConnections {
+	if clientStore.Count() >= channel.Config.MaxOfChannelConnections {
 		err := fmt.Errorf("maximum connection limit for this channel %s has been established", channelID)
 		systemLog.Error(err.Error())
 		c.IndentedJSON(http.StatusUnprocessableEntity, gin.H{

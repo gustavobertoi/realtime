@@ -6,9 +6,9 @@ import (
 
 type Client struct {
 	ID        string `json:"id"`
-	ChannelID string `json:"channelId"`
-	UserAgent string `json:"userAgent"`
-	IPAddress string `json:"ipAddress"`
+	ChannelID string `json:"channel_id"`
+	UserAgent string `json:"user_agent"`
+	IPAddress string `json:"ip_address"`
 
 	producerAdapter ProducerAdapter
 	ch              chan *Message
