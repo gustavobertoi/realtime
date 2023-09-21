@@ -9,7 +9,6 @@ import (
 	"github.com/open-source-cloud/realtime/internal/channels"
 	"github.com/open-source-cloud/realtime/internal/config"
 	"github.com/open-source-cloud/realtime/pkg/log"
-	"github.com/open-source-cloud/realtime/pkg/uuid"
 	"github.com/sirupsen/logrus"
 )
 
@@ -30,7 +29,7 @@ func channelById(c *gin.Context, conf *config.Config) {
 		return
 	}
 
-	if clientStore.Count() >= channel.Config.MaxOfChannelConnections {
+	if channel.IsMaxOfConnections() {
 		err := fmt.Errorf("maximum connection limit for this channel %s has been established", channelID)
 		systemLog.Error(err.Error())
 		c.IndentedJSON(http.StatusUnprocessableEntity, gin.H{
@@ -38,15 +37,16 @@ func channelById(c *gin.Context, conf *config.Config) {
 		})
 	}
 
-	clientID := c.Query("clientId")
-	if clientID == "" {
-		clientID = uuid.NewUUID()
-	}
 	userAgent, ip := GetIPAndUserAgent(c.Request)
-	client := channels.NewClient(clientID, userAgent, ip, channelID)
-	client.SetProducerAdapter(conf.GetClientProducerAdapter())
-	if clientStore.Put(client); err != nil {
-		systemLog.Errorf("error setting client %s from channel %s into store, details: %v", clientID, channelID, err)
+	client := channels.NewClient(&channels.CreateClientDTO{
+		ID:        c.Query("clientId"),
+		ChannelID: channel.ID,
+		IPAddress: ip,
+		UserAgent: userAgent,
+	})
+
+	if channel.Store.Put(client); err != nil {
+		systemLog.Errorf("error setting client %s from channel %s into store, details: %v", client.ID, channelID, err)
 		c.IndentedJSON(http.StatusInternalServerError, gin.H{
 			"message": "Internal server error",
 		})
@@ -55,10 +55,10 @@ func channelById(c *gin.Context, conf *config.Config) {
 
 	logger := log.CreateWithContext("channels_routes.go", logrus.Fields{
 		"channel_id": channelID,
-		"client_id":  clientID,
+		"client_id":  client.ID,
 	})
 
-	logger.Print("client created upgrading connection to websocket")
+	logger.Infof("client %s from channel %s has been created, upgrading connection to websocket", client.ID, channelID)
 
 	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
@@ -72,24 +72,26 @@ func channelById(c *gin.Context, conf *config.Config) {
 	defer func() {
 		logger.Print("deleting client from channel")
 		conn.Close()
-		clientStore.Delete(client)
+		channel.Store.Delete(client)
 	}()
 
 	// Write messages
 	go func() {
-		ch := client.GetChan()
 		if channel.Subscribe(client); err != nil {
 			logger.Panicf("error subscribing client on channel")
 			return
 		}
 		for {
-			msg := <-ch
-			logger.Infof("writing message %s to buffer", msg.ID)
-			err := writeMessageToBuffer(msg, client, conn)
-			if err != nil {
-				logger.Errorf("error writing message %s to buffer, details: %v", msg.ID, err)
-			} else {
-				logger.Infof("message %s has been sent to client", msg.ID)
+			msg := <-client.MessageChan()
+			// TODO: Write self msgs?
+			if msg.ClientID != client.ID {
+				logger.Infof("writing message %s to buffer", msg.ID)
+				err := writeMessageToBuffer(msg, client, conn)
+				if err != nil {
+					logger.Errorf("error writing message %s to buffer, details: %v", msg.ID, err)
+					continue
+				}
+				logger.Infof("message %s has been sent to client %s", msg.ID, client.ID)
 			}
 		}
 	}()
@@ -102,9 +104,10 @@ func channelById(c *gin.Context, conf *config.Config) {
 			break
 		}
 		msg := channels.NewMessage(channelID, client.ID, string(payload))
-		logger.Printf("broadcasting message %s to all clients", msg.ID)
+		logger.Printf("channel %s is broadcasting message %s from client %s to all clients", channelID, msg.ID, client.ID)
 		if messageType == websocket.TextMessage {
-			for _, err := range channel.BroadcastToAllClients(msg) {
+			err := channel.BroadcastMessage(msg)
+			if err != nil {
 				logger.Errorf("error broadcasting message %s, details: %v", msg.ID, err)
 			}
 		}
@@ -112,13 +115,9 @@ func channelById(c *gin.Context, conf *config.Config) {
 }
 
 func writeMessageToBuffer(msg *channels.Message, client *channels.Client, conn *websocket.Conn) error {
-	// TODO: Write self messages?
-	if msg.ClientID != client.ID {
-		msgStr, err := msg.ToJSON()
-		if err != nil {
-			return err
-		}
-		return conn.WriteMessage(websocket.TextMessage, []byte(msgStr))
+	msgStr, err := msg.MessageToJSON()
+	if err != nil {
+		return err
 	}
-	return nil
+	return conn.WriteMessage(websocket.TextMessage, []byte(msgStr))
 }
