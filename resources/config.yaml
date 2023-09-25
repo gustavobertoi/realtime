@@ -3,6 +3,7 @@ server:
   allow_push_server_messages: true
 
 pubsub:
+  # driver: "MEMORY"
   driver: "REDIS"
   redis:
     url: "redis://default:realtime@localhost:6379"

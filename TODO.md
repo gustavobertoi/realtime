@@ -1,9 +1,9 @@
-- [] Create a config yaml to create channels from bootstrap (config.yaml)
-- [] Create a router to push events from POST /channels/:channels_id to all clients into a channel (server push)
+- [x] Create a config yaml to create channels from bootstrap (config.yaml)
+- [\] Create a router to push events from POST /channels/:channels_id to all clients into a channel (server push)
 - [] Refactor internal packages
-- [] Refactor public to be web
+- [x] Refactor public to be web
 - [] Add unit tests
-- [] Create a support to a channel be a WS or SSE channel
+- [\] Create a support to a channel be a WS or SSE channel
 - [] Create some e2e tests
 - [] Add a dockerfile
 - [] Add a docker-compose to use air (hot reload)

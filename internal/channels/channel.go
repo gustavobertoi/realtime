@@ -1,5 +1,7 @@
 package channels
 
+import "github.com/open-source-cloud/realtime/pkg/store"
+
 const (
 	WebSocket        = "WS"
 	ServerSentEvents = "SSE"
@@ -15,7 +17,7 @@ type (
 		Config *ChannelConfig `json:"config"`
 		Type   string         `json:"type"`
 
-		store    *ClientStore
+		store    *store.MemoryStore
 		producer ProducerAdapter
 		consumer ConsumerAdapter
 	}
@@ -29,7 +31,7 @@ func NewChannel(dto *CreateChannelDTO, consumer ConsumerAdapter, producer Produc
 			MaxOfChannelConnections: dto.MaxOfChannelConnections,
 		},
 		Type:     dto.Type,
-		store:    NewClientStore(),
+		store:    store.NewMemoryStore(),
 		consumer: consumer,
 		producer: producer,
 	}
@@ -63,9 +65,17 @@ func (c *Channel) Subscribe(client *Client) error {
 }
 
 func (c *Channel) DeleteClient(client *Client) {
-	c.store.Delete(client)
+	c.store.Delete(client.ID)
 }
 
-func (c *Channel) PutClient(client *Client) {
-	c.store.Put(client)
+func (c *Channel) AddClient(client *Client) {
+	c.store.Set(client.ID, client)
+}
+
+func (c *Channel) IsWebSocket() bool {
+	return c.Type == WebSocket
+}
+
+func (c *Channel) IsSSE() bool {
+	return c.Type == ServerSentEvents
 }

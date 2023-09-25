@@ -5,17 +5,12 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/gorilla/websocket"
 	"github.com/open-source-cloud/realtime/internal/channels"
 	"github.com/open-source-cloud/realtime/internal/config"
+	"github.com/open-source-cloud/realtime/internal/server/drivers"
 	"github.com/open-source-cloud/realtime/pkg/log"
 	"github.com/sirupsen/logrus"
 )
-
-var upgrader = websocket.Upgrader{
-	ReadBufferSize:  1024,
-	WriteBufferSize: 1024,
-}
 
 var systemLog = log.GetStaticInstance()
 
@@ -35,6 +30,7 @@ func channelById(c *gin.Context, conf *config.Config) {
 		c.IndentedJSON(http.StatusUnprocessableEntity, gin.H{
 			"message": err.Error(),
 		})
+		return
 	}
 
 	userAgent, ip := GetIPAndUserAgent(c.Request)
@@ -44,7 +40,7 @@ func channelById(c *gin.Context, conf *config.Config) {
 		UserAgent: userAgent,
 		IPAddress: ip,
 	})
-	channel.PutClient(client)
+	channel.AddClient(client)
 
 	upgradeConnection := c.Query("upgrade")
 	if upgradeConnection == "" {
@@ -59,73 +55,56 @@ func channelById(c *gin.Context, conf *config.Config) {
 	})
 
 	if upgradeConnection == "0" {
-		logger.Info("request was set to not be upgraded")
 		c.IndentedJSON(http.StatusOK, gin.H{
 			"message": "OK",
 		})
 		return
 	}
 
-	logger.Infof("client %s from channel %s has been created, upgrading connection to websocket", client.ID, channelID)
+	logger.Infof("client %s from channel %s has been created, upgrading connection to %s", client.ID, channelID, channel.Type)
 
-	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
+	if channel.IsWebSocket() {
+		drivers.WebSocket(c.Request, c.Writer, client, channel)
+		return
+	}
+
+	if channel.IsSSE() {
+		drivers.NewSSE(c, channel, client)
+		return
+	}
+}
+
+func pushServerMessage(c *gin.Context, conf *config.Config) {
+	var dto *channels.SendServerMessageDTO
+	err := c.BindJSON(&dto)
 	if err != nil {
-		logger.Errorf("failed to set websocket upgrade: %v", err)
-		c.IndentedJSON(http.StatusNotFound, gin.H{
-			"message": err.Error(),
+		// TODO: improve validations
+		c.IndentedJSON(http.StatusBadRequest, gin.H{
+			"message": "invalid body schema",
 		})
 		return
 	}
 
-	defer func() {
-		logger.Print("deleting client from channel")
-		conn.Close()
-		channel.DeleteClient(client)
-	}()
-
-	// Write messages
-	go func() {
-		if channel.Subscribe(client); err != nil {
-			logger.Panicf("error subscribing client on channel")
-			return
-		}
-		for {
-			msg := <-client.MessageChan()
-			// TODO: Write self msgs?
-			if msg.ClientID != client.ID {
-				logger.Infof("writing message %s to buffer", msg.ID)
-				err := writeMessageToBuffer(msg, client, conn)
-				if err != nil {
-					logger.Errorf("error writing message %s to buffer, details: %v", msg.ID, err)
-					continue
-				}
-				logger.Infof("message %s has been sent to client %s", msg.ID, client.ID)
-			}
-		}
-	}()
-
-	// Read messages
-	for {
-		messageType, payload, err := conn.ReadMessage()
-		if err != nil {
-			logger.Errorf("error reading message from buffer: %v", err)
-			break
-		}
-		msg := channels.NewMessage(channelID, client.ID, string(payload))
-		logger.Printf("channel %s is broadcasting message %s from client %s to all clients", channelID, msg.ID, client.ID)
-		if messageType == websocket.TextMessage {
-			err := channel.BroadcastMessage(msg)
-			if err != nil {
-				logger.Errorf("error broadcasting message %s, details: %v", msg.ID, err)
-			}
-		}
-	}
-}
-
-func writeMessageToBuffer(msg *channels.Message, client *channels.Client, conn *websocket.Conn) error {
-	msgStr, err := msg.MessageToJSON()
+	channelID := c.Param("channelId")
+	channel, err := conf.GetChannelByID(channelID)
 	if err != nil {
-		return err
+		c.IndentedJSON(http.StatusNotFound, gin.H{
+			"message": "channel not found",
+		})
+		return
 	}
-	return conn.WriteMessage(websocket.TextMessage, []byte(msgStr))
+
+	clientId := "server-message"
+	msg := channels.NewMessage(channelID, clientId, dto.Payload)
+
+	if err := channel.BroadcastMessage(msg); err != nil {
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{
+			"message": "Error broadcasting message to all clients",
+		})
+		return
+	}
+
+	c.IndentedJSON(http.StatusOK, gin.H{
+		"message": fmt.Sprintf("message %s has been sent to all clients", msg.ID),
+	})
 }
