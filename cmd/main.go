@@ -1,24 +1,19 @@
 package main
 
 import (
+	"log"
+
 	"github.com/open-source-cloud/realtime/internal/config"
 	"github.com/open-source-cloud/realtime/internal/server"
-	"github.com/open-source-cloud/realtime/pkg/log"
 )
 
 func main() {
-	logger := log.GetStaticInstance()
-
-	logger.Print("Creating config")
-
 	config := config.NewConfig()
-
-	logger.Print("Creating server")
+	if err := config.LoadConfigYaml(); err != nil {
+		log.Fatal(err)
+	}
 	server := server.NewServer(config)
-
-	logger.Print("Starting http and ws server")
-	err := server.Start()
-	if err != nil {
-		panic(err)
+	if err := server.Start(); err != nil {
+		log.Fatal(err)
 	}
 }

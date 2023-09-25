@@ -41,22 +41,30 @@ func channelById(c *gin.Context, conf *config.Config) {
 	client := channels.NewClient(&channels.CreateClientDTO{
 		ID:        c.Query("clientId"),
 		ChannelID: channel.ID,
-		IPAddress: ip,
 		UserAgent: userAgent,
+		IPAddress: ip,
 	})
+	channel.PutClient(client)
 
-	if channel.Store.Put(client); err != nil {
-		systemLog.Errorf("error setting client %s from channel %s into store, details: %v", client.ID, channelID, err)
-		c.IndentedJSON(http.StatusInternalServerError, gin.H{
-			"message": "Internal server error",
-		})
-		return
+	upgradeConnection := c.Query("upgrade")
+	if upgradeConnection == "" {
+		upgradeConnection = "1"
 	}
 
 	logger := log.CreateWithContext("channels_routes.go", logrus.Fields{
-		"channel_id": channelID,
-		"client_id":  client.ID,
+		"channel_id":        channelID,
+		"client_id":         client.ID,
+		"client_user_agent": userAgent,
+		"client_ip_address": ip,
 	})
+
+	if upgradeConnection == "0" {
+		logger.Info("request was set to not be upgraded")
+		c.IndentedJSON(http.StatusOK, gin.H{
+			"message": "OK",
+		})
+		return
+	}
 
 	logger.Infof("client %s from channel %s has been created, upgrading connection to websocket", client.ID, channelID)
 
@@ -72,7 +80,7 @@ func channelById(c *gin.Context, conf *config.Config) {
 	defer func() {
 		logger.Print("deleting client from channel")
 		conn.Close()
-		channel.Store.Delete(client)
+		channel.DeleteClient(client)
 	}()
 
 	// Write messages

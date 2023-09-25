@@ -36,12 +36,25 @@
 
       console.log(`My client id: ${clientId}`);
 
-      const socket = new WebSocket(
-        `ws://${host}/channels/${channelId}?clientId=${clientId}`
-      );
+      async function checkChannelCredentials() {
+        const response = await fetch(
+          `http://${host}/channels/${channelId}?clientId=${clientId}&upgrade=0`
+        );
+        const data = await response.json();
+        console.log("Response from channel", data);
+        if (response.status === 200) {
+          console.log("Creating websocket client");
+          createWebSocketClient();
+        }
+      }
 
-      const makeReceiverChatComponent = ({ content, avatarName, time }) => {
-        return `
+      function createWebSocketClient() {
+        const socket = new WebSocket(
+          `ws://${host}/channels/${channelId}?clientId=${clientId}`
+        );
+
+        const makeReceiverChatComponent = ({ content, avatarName, time }) => {
+          return `
           <div class="flex w-full mt-2 space-x-3 max-w-xs">
             <div class="flex justify-center items-center">
                 <div class="flex-shrink-0 h-10 w-10 rounded-full bg-gray-300 flex justify-center items-center">
@@ -56,10 +69,10 @@
             </div>
           </div>
         `;
-      };
+        };
 
-      const makeSenderChatComponent = ({ content, avatarName, time }) => {
-        return `
+        const makeSenderChatComponent = ({ content, avatarName, time }) => {
+          return `
           <div class="flex w-full mt-2 space-x-3 max-w-xs ml-auto justify-end">
             <div>
               <div class="bg-blue-600 text-white p-3 rounded-l-lg rounded-br-lg">
@@ -74,46 +87,49 @@
             </div>
           </div>
         `;
-      };
+        };
 
-      socket.addEventListener("close", function (event) {
-        console.log("Disconnected from websocket", event);
-      });
-
-      socket.addEventListener("open", function (event) {
-        console.log("Connected to websocket", event);
-      });
-
-      socket.addEventListener("error", function (event) {
-        console.log(error, event);
-      });
-
-      socket.addEventListener("message", function (event) {
-        const message = JSON.parse(event.data);
-        const content = message.payload;
-        const chatMsgHtml = makeReceiverChatComponent({
-          content: content,
-          avatarName: "Guest",
-          time: "1 minute ago",
+        socket.addEventListener("close", function (event) {
+          console.log("Disconnected from websocket", event);
         });
-        messagesElement.innerHTML += chatMsgHtml;
-      });
 
-      chatInputElement.addEventListener("keydown", function (e) {
-        const target = e.key || e.code;
-        const isEnter = target === "Enter";
-        const inputValue = chatInputElement.value || "";
-        if (isEnter && inputValue !== "") {
-          socket.send(inputValue);
-          const chatMsgHtml = makeSenderChatComponent({
-            content: inputValue,
-            avatarName: "Me",
+        socket.addEventListener("open", function (event) {
+          console.log("Connected to websocket", event);
+        });
+
+        socket.addEventListener("error", function (event) {
+          console.log(error, event);
+        });
+
+        socket.addEventListener("message", function (event) {
+          const message = JSON.parse(event.data);
+          const content = message.payload;
+          const chatMsgHtml = makeReceiverChatComponent({
+            content: content,
+            avatarName: "Guest",
             time: "1 minute ago",
           });
           messagesElement.innerHTML += chatMsgHtml;
-          chatInputElement.value = "";
-        }
-      });
+        });
+
+        chatInputElement.addEventListener("keydown", function (e) {
+          const target = e.key || e.code;
+          const isEnter = target === "Enter";
+          const inputValue = chatInputElement.value || "";
+          if (isEnter && inputValue !== "") {
+            socket.send(inputValue);
+            const chatMsgHtml = makeSenderChatComponent({
+              content: inputValue,
+              avatarName: "Me",
+              time: "1 minute ago",
+            });
+            messagesElement.innerHTML += chatMsgHtml;
+            chatInputElement.value = "";
+          }
+        });
+      }
+
+      checkChannelCredentials().catch(console.error);
     </script>
   </body>
 </html>

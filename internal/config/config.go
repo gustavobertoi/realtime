@@ -1,47 +1,55 @@
 package config
 
 import (
-	"context"
-	"errors"
+	"os"
+	"path"
 
-	"github.com/open-source-cloud/realtime/internal/channels"
-	redis_adapter "github.com/open-source-cloud/realtime/pkg/redis"
+	"github.com/open-source-cloud/realtime/pkg/store"
+	"gopkg.in/yaml.v2"
 )
 
-var errChannelNotFound = errors.New("channel not found")
-
-var redisAdapter = redis_adapter.NewRedisAdapter(context.Background(), &redis_adapter.RedisConfig{
-	URL: "redis://default:realtime@localhost:6379",
-})
-var channelsRedisAdapter = channels.NewChannelsRedisAdapter(redisAdapter)
-
 type Config struct {
-	Port        int
-	channelsMap map[string]*channels.Channel
+	Port int
+
+	channelStore *store.MemoryStore
+	yamlConfig   *YamlConfigRootDTO
 }
 
 func NewConfig() *Config {
 	c := &Config{
-		Port:        8080,
-		channelsMap: make(map[string]*channels.Channel),
+		Port:         8080,
+		channelStore: store.NewMemoryStore(),
+		yamlConfig:   nil,
 	}
-	c.loadChannelsFromYaml()
 	return c
 }
 
-// TODO: Refactor this function to load from yaml
-func (c *Config) loadChannelsFromYaml() {
-	var eventsChannel, err = channels.NewChannel("742fc7fe-1527-4184-8945-10b30bf01347", "events", 2, channelsRedisAdapter)
-	if (err) != nil {
-		panic(err)
+func (c *Config) LoadConfigYaml() error {
+	pwd, err := os.Getwd()
+	if err != nil {
+		return err
 	}
-	c.channelsMap[eventsChannel.ID] = eventsChannel
-}
 
-func (c *Config) GetChannelByID(id string) (*channels.Channel, error) {
-	ch := c.channelsMap[id]
-	if ch == nil {
-		return nil, errChannelNotFound
+	fileName := "config.yaml"
+	resourcesFolder := "resources"
+	filePath := path.Join(pwd, resourcesFolder, fileName)
+
+	file, err := os.ReadFile(filePath)
+	if err != nil {
+		return err
 	}
-	return ch, nil
+
+	var schema *YamlConfigRootDTO
+	err = yaml.Unmarshal(file, &schema)
+	if err != nil {
+		return err
+	}
+
+	c.yamlConfig = schema
+
+	if err := c.createChannelsFromConfig(); err != nil {
+		return err
+	}
+
+	return nil
 }

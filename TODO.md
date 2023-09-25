@@ -1,0 +1,19 @@
+- [] Create a config yaml to create channels from bootstrap (config.yaml)
+- [] Create a router to push events from POST /channels/:channels_id to all clients into a channel (server push)
+- [] Refactor internal packages
+- [] Refactor public to be web
+- [] Add unit tests
+- [] Create a support to a channel be a WS or SSE channel
+- [] Create some e2e tests
+- [] Add a dockerfile
+- [] Add a docker-compose to use air (hot reload)
+- [] Add a database (cockroach, scylla, mongo) to store channels/clients messages
+- [] Add a README
+- [] Create a www folder to create documentation
+- [] Open to public
+- [] Add a ci/cd with semantic release, lint, tests and docker image publish
+- [] Write documentation using examples how to use/create the realtime service
+- [] Add kafka, nats, memory adapters to pub/sub client/channels messages
+- [] Create a Admin Portal to monitore channels, clients and messages
+- [] Add OAuth support
+- [] Create a sdk to typescript & golang

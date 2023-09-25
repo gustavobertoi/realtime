@@ -2,13 +2,6 @@ package channels
 
 import "github.com/open-source-cloud/realtime/pkg/uuid"
 
-type CreateClientDTO struct {
-	ID        string
-	ChannelID string
-	UserAgent string
-	IPAddress string
-}
-
 type Client struct {
 	ID        string `json:"id"`
 	ChannelID string `json:"channel_id"`

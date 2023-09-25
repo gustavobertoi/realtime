@@ -1,27 +1,35 @@
 package channels
 
-type ChannelConfig struct {
-	MaxOfChannelConnections int `json:"max_of_channels_connections"`
-}
+const (
+	WebSocket        = "WS"
+	ServerSentEvents = "SSE"
+)
 
-type Channel struct {
-	producer ProducerAdapter
-	consumer ConsumerAdapter
+type (
+	ChannelConfig struct {
+		MaxOfChannelConnections int `json:"max_of_channels_connections"`
+	}
+	Channel struct {
+		ID     string         `json:"id"`
+		Name   string         `json:"name"`
+		Config *ChannelConfig `json:"config"`
+		Type   string         `json:"type"`
 
-	ID     string         `json:"id"`
-	Name   string         `json:"name"`
-	Config *ChannelConfig `json:"config"`
-	Store  *ClientStore
-}
+		store    *ClientStore
+		producer ProducerAdapter
+		consumer ConsumerAdapter
+	}
+)
 
-func NewChannel(id string, name string, maxOfChannelConnections int, consumer ConsumerAdapter, producer ProducerAdapter) (*Channel, error) {
+func NewChannel(dto *CreateChannelDTO, consumer ConsumerAdapter, producer ProducerAdapter) (*Channel, error) {
 	c := &Channel{
-		ID:   id,
-		Name: name,
+		ID:   dto.ID,
+		Name: dto.Name,
 		Config: &ChannelConfig{
-			MaxOfChannelConnections: maxOfChannelConnections,
+			MaxOfChannelConnections: dto.MaxOfChannelConnections,
 		},
-		Store:    NewClientStore(),
+		Type:     dto.Type,
+		store:    NewClientStore(),
 		consumer: consumer,
 		producer: producer,
 	}
@@ -33,15 +41,17 @@ func NewChannel(id string, name string, maxOfChannelConnections int, consumer Co
 }
 
 func (c *Channel) validate() error {
-	const maxOfConnectionsPerChannel = 100
-	if c.Config.MaxOfChannelConnections > maxOfConnectionsPerChannel {
+	if c.Config.MaxOfChannelConnections <= 0 {
 		return errInvalidMaxLimitOfConnections
+	}
+	if c.Type != WebSocket && c.Type != ServerSentEvents {
+		return errInvalidChannelType
 	}
 	return nil
 }
 
 func (c *Channel) IsMaxOfConnections() bool {
-	return c.Store.Count() >= c.Config.MaxOfChannelConnections
+	return c.store.Count() >= c.Config.MaxOfChannelConnections
 }
 
 func (c *Channel) BroadcastMessage(m *Message) error {
@@ -50,4 +60,12 @@ func (c *Channel) BroadcastMessage(m *Message) error {
 
 func (c *Channel) Subscribe(client *Client) error {
 	return c.consumer.Subscribe(client)
+}
+
+func (c *Channel) DeleteClient(client *Client) {
+	c.store.Delete(client)
+}
+
+func (c *Channel) PutClient(client *Client) {
+	c.store.Put(client)
 }

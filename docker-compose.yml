@@ -1,12 +1,12 @@
-version: '3'
+version: "3"
 
 services:
   redis-server:
-    image: 'bitnami/redis:latest'
+    image: "bitnami/redis:latest"
     environment:
-      REDIS_PASSWORD: ${REDIS_PASSWORD:-realtime}
+      REDIS_PASSWORD: realtime
     ports:
-      - ${REDIS_PORT:-6379}:6379
+      - 6379:6379
     volumes:
       - realtime-redis-volume:/bitnami/redis/data
     networks:
