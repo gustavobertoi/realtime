@@ -2,16 +2,16 @@ FROM golang:1.21 as build
 
 WORKDIR /app
 
-COPY . /
+COPY . /app
 
 RUN go mod download
-RUN go build -o /bin/realtime cmd/main.go
+RUN go build -o /app/bin/realtime /app/cmd/main.go
 
 FROM gcr.io/distroless/base-debian10
 
 WORKDIR /
 
-COPY --from=build /bin/realtime .
+COPY --from=build /app/bin/realtime .
 
 EXPOSE 8080
 
