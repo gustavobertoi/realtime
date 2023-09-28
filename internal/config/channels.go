@@ -10,8 +10,8 @@ import (
 
 // PubSub adapters
 const (
-	memoryAdapter = "MEMORY"
-	redisAdapter  = "REDIS"
+	memoryDriver = "MEMORY"
+	redisDriver  = "REDIS"
 )
 
 type channelAdapter struct {
@@ -27,45 +27,43 @@ func (c *Config) GetChannelByID(refID string) (*channels.Channel, error) {
 	return channel.(*channels.Channel), nil
 }
 
-func (c *Config) createChannelsFromConfig() error {
-	if c.yamlConfig == nil {
+func (c *Config) CreateChannelsFromConfig() error {
+	if c.rootConfig == nil {
 		return errYamlConfigNotDefined
 	}
-
-	ps := c.yamlConfig.PubSub
+	ps := c.rootConfig.PubSub
 	ca, err := createChannelAdapter(ps)
 	if err != nil {
 		return err
 	}
-
-	channelsMap := c.yamlConfig.Channels
-	for _, channelDTO := range channelsMap {
-		channel, err := channels.NewChannel(&channels.CreateChannelDTO{
-			ID:                      channelDTO.ID,
-			Name:                    channelDTO.Name,
-			Type:                    channelDTO.Type,
-			MaxOfChannelConnections: channelDTO.Config.MaxOfConnections,
-		}, ca.consumer, ca.producer)
-		if err != nil {
-			return err
+	if len(c.rootConfig.Channels) >= 1 {
+		for _, dto := range c.rootConfig.Channels {
+			channel, err := channels.NewChannel(&channels.CreateChannelDTO{
+				ID:                      dto.ID,
+				Name:                    dto.Name,
+				Type:                    dto.Type,
+				MaxOfChannelConnections: dto.Config.MaxOfConnections,
+			}, ca.consumer, ca.producer)
+			if err != nil {
+				return err
+			}
+			c.channelStore.Set(channel.ID, channel)
 		}
-		c.channelStore.Set(channel.ID, channel)
 	}
-
 	return nil
 }
 
-func createChannelAdapter(pubsub *YamlPubSubDTO) (*channelAdapter, error) {
+func createChannelAdapter(pubsub *PubSubDTO) (*channelAdapter, error) {
 	switch pubsub.Driver {
-	case memoryAdapter:
+	case memoryDriver:
 		return createMemoryChannelAdapter(pubsub)
-	case redisAdapter:
+	case redisDriver:
 		return createRedisChannelAdapter(pubsub)
 	}
 	return nil, errDriverNotSupported
 }
 
-func createMemoryChannelAdapter(pubsub *YamlPubSubDTO) (*channelAdapter, error) {
+func createMemoryChannelAdapter(pubsub *PubSubDTO) (*channelAdapter, error) {
 	memoryAdapter := memory_adapter.NewMemmoryAdapter()
 	return &channelAdapter{
 		consumer: memoryAdapter,
@@ -73,7 +71,7 @@ func createMemoryChannelAdapter(pubsub *YamlPubSubDTO) (*channelAdapter, error) 
 	}, nil
 }
 
-func createRedisChannelAdapter(pubsub *YamlPubSubDTO) (*channelAdapter, error) {
+func createRedisChannelAdapter(pubsub *PubSubDTO) (*channelAdapter, error) {
 	if pubsub.Redis == nil {
 		return nil, errRedisPubSubAdapterNotDefined
 	}

@@ -8,73 +8,72 @@ import (
 )
 
 type (
-	YamlServerDTO struct {
+	ServerDTO struct {
 		AllowCreateNewChannels  bool `yaml:"allow_create_new_channels"`
 		AllowPushServerMessages bool `yaml:"allow_push_server_messages"`
+		RenderChatHTML          bool `yaml:"render_chat_html"`
+		RenderNotificationsHTML bool `yaml:"render_notifications_html"`
 	}
-	YamlPubSubRedisDTO struct {
+	PubSubRedisDTO struct {
 		URL string `yaml:"url"`
 	}
-	YamlPubSubDTO struct {
-		Driver string              `yaml:"driver"`
-		Redis  *YamlPubSubRedisDTO `yaml:"redis"`
+	PubSubDTO struct {
+		Driver string          `yaml:"driver"`
+		Redis  *PubSubRedisDTO `yaml:"redis"`
 	}
-	YamlChannelConfigDTO struct {
+	ChannelConfigDTO struct {
 		MaxOfConnections int `yaml:"max_of_connections"`
 	}
-	YamlChannelDTO struct {
-		ID     string                `yaml:"id"`
-		Type   string                `yaml:"type"`
-		Name   string                `yaml:"name"`
-		Config *YamlChannelConfigDTO `yaml:"config"`
+	ChannelDTO struct {
+		ID     string            `yaml:"id"`
+		Type   string            `yaml:"type"`
+		Name   string            `yaml:"name"`
+		Config *ChannelConfigDTO `yaml:"config"`
 	}
-	YamlConfigRootDTO struct {
-		Server   *YamlServerDTO             `yaml:"server"`
-		PubSub   *YamlPubSubDTO             `yaml:"pubsub"`
-		Channels map[string]*YamlChannelDTO `yaml:"channels"`
+	RootConfigDTO struct {
+		Server   *ServerDTO             `yaml:"server"`
+		PubSub   *PubSubDTO             `yaml:"pubsub"`
+		Channels map[string]*ChannelDTO `yaml:"channels"`
 	}
 )
 
-func (c *Config) LoadConfigYaml() error {
-	filePath, err := loadConfigFilePath()
-	if err != nil {
-		return err
-	}
-
-	file, err := os.ReadFile(filePath)
-	if err != nil {
-		return err
-	}
-
-	var schema *YamlConfigRootDTO
-	err = yaml.Unmarshal(file, &schema)
-	if err != nil {
-		return err
-	}
-
-	c.yamlConfig = schema
-
-	if err := c.createChannelsFromConfig(); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func loadConfigFilePath() (string, error) {
+func getConfigFilePath() string {
 	envFilePath := os.Getenv("CONFIG_FOLDER_PATH")
 	if envFilePath != "" {
-		return envFilePath, nil
+		return envFilePath
 	}
-
-	pwd, err := os.Getwd()
-	if err != nil {
-		return "", err
-	}
-
+	pwd, _ := os.Getwd()
 	fileName := "config.yaml"
 	resourcesFolder := "realtime"
 	filePath := path.Join(pwd, resourcesFolder, fileName)
+	return filePath
+}
 
-	return filePath, nil
+func (c *Config) LoadConfigFromYaml() {
+	filePath := getConfigFilePath()
+	file, err := os.ReadFile(filePath)
+	// NOTE: Means that file does not exists in container memory (skipping it)
+	if err != nil {
+		return
+	}
+	var schema *RootConfigDTO
+	err = yaml.Unmarshal(file, &schema)
+	// NOTE: Error reading config file and parsing it (throw error?)
+	if err != nil {
+		panic(err)
+	}
+	// TODO: Add a validation method to validate all nested props/structs
+	c.rootConfig = schema
+}
+
+func (c *Config) GetServerConfig() *ServerDTO {
+	return c.rootConfig.Server
+}
+
+func (c *Config) GetPubSubConfig() *PubSubDTO {
+	return c.rootConfig.PubSub
+}
+
+func (c *Config) GetChannelsConfig() map[string]*ChannelDTO {
+	return c.rootConfig.Channels
 }

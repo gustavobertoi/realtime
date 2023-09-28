@@ -9,9 +9,12 @@ import (
 
 func main() {
 	config := config.NewConfig()
-	if err := config.LoadConfigYaml(); err != nil {
+	config.LoadConfigFromYaml()
+	err := config.CreateChannelsFromConfig()
+	if err != nil {
 		log.Fatal(err)
 	}
+
 	server := server.NewServer(config)
 	if err := server.Start(); err != nil {
 		log.Fatal(err)

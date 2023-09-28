@@ -3,8 +3,15 @@ package server
 import "github.com/gin-gonic/gin"
 
 func (s *Server) registerRoutes(r *gin.Engine) error {
-	r.Static("/chat", "./web/chat")
-	r.Static("/notifications", "./web/notifications")
+	conf := s.c
+	serverConfig := conf.GetServerConfig()
+
+	if serverConfig.RenderChatHTML {
+		r.Static("/chat", "./web/chat")
+	}
+	if serverConfig.RenderNotificationsHTML {
+		r.Static("/notifications", "./web/notifications")
+	}
 
 	r.GET("/channels/:channelId", func(ctx *gin.Context) {
 		channelById(ctx, s.c)
