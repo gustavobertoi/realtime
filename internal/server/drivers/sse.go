@@ -32,8 +32,7 @@ func NewSSE(c *gin.Context, channel *channels.Channel, client *channels.Client) 
 			select {
 			case <-clientGone:
 				return
-			default:
-				msg := <-msgChan
+			case msg := <-msgChan:
 				msgStr, err := msg.MessageToJSON()
 				if err != nil {
 					break

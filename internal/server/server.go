@@ -1,8 +1,6 @@
 package server
 
 import (
-	"fmt"
-
 	"github.com/gin-gonic/gin"
 	"github.com/open-source-cloud/realtime/internal/config"
 )
@@ -11,9 +9,9 @@ type Server struct {
 	c *config.Config
 }
 
-func NewServer(config *config.Config) *Server {
+func NewServer(c *config.Config) *Server {
 	s := &Server{
-		c: config,
+		c: c,
 	}
 	return s
 }
@@ -21,18 +19,11 @@ func NewServer(config *config.Config) *Server {
 func (s *Server) Start() error {
 	r := gin.New()
 	r.Use(gin.Recovery())
-
-	err := s.registerRoutes(r)
-	if err != nil {
+	if err := s.registerRoutes(r); err != nil {
 		return err
 	}
-
-	port := fmt.Sprintf(":%d", s.c.Port)
-
-	err = r.Run(port)
-	if err != nil {
+	if err := r.Run(s.c.GetPort()); err != nil {
 		return err
 	}
-
 	return nil
 }
