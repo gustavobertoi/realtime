@@ -15,6 +15,7 @@ COPY --from=build /app/bin/realtime .
 
 EXPOSE 8080
 
-USER nonroot:nonroot
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+USER appuser:appgroup
 
 ENTRYPOINT ["./realtime"]
