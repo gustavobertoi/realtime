@@ -7,7 +7,7 @@ COPY . /app
 RUN go mod download
 RUN go build -o /app/bin/realtime /app/cmd/main.go
 
-FROM gcr.io/distroless/base-debian10
+FROM alpine:latest
 
 WORKDIR /
 
