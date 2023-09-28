@@ -1,5 +1,5 @@
 build:
-	@go build -o bin/realtime cmd/main.go
+	@go build -o bin/realtime .
 
 run:
 	@./bin/realtime

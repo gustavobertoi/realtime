@@ -1,3 +1,5 @@
+## Build stage
+
 FROM golang:1.21 as build
 
 WORKDIR /app
@@ -5,17 +7,16 @@ WORKDIR /app
 COPY . /app
 
 RUN go mod download
-RUN go build -o /app/bin/realtime /app/cmd/main.go
+RUN CGO_ENABLED=0 go build -o bin/realtime .
 
-FROM alpine:latest
+## Runnable container
 
-WORKDIR /
+FROM gcr.io/distroless/base-debian11 as runnable
 
-COPY --from=build /app/bin/realtime .
+COPY --from=build /app/bin/realtime /
 
 EXPOSE 8080
 
-RUN addgroup -S appgroup && adduser -S appuser -G appgroup
-USER appuser:appgroup
+USER nonroot:nonroot
 
-ENTRYPOINT ["./realtime"]
+CMD ["/realtime"]
