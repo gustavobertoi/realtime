@@ -19,9 +19,11 @@ jobs:
           go-version: 1.21
       - uses: golangci/golangci-lint-action@v3
 
-  publish-image:
+  publish-docker-image:
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs:
+      - lint
     steps:
       - uses: actions/checkout@v2
       - uses: docker/login-action@v1

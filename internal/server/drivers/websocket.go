@@ -30,9 +30,11 @@ func WebSocket(request *http.Request, writer gin.ResponseWriter, client *channel
 			if msg.ClientID != client.ID {
 				msgStr, err := msg.MessageToJSON()
 				if err != nil {
-					break
+					panic(err)
 				}
-				conn.WriteMessage(websocket.TextMessage, []byte(msgStr))
+				if err := conn.WriteMessage(websocket.TextMessage, []byte(msgStr)); err != nil {
+					panic(err)
+				}
 			}
 		}
 	}()

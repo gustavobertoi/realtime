@@ -38,7 +38,10 @@ func NewSSE(c *gin.Context, channel *channels.Channel, client *channels.Client) 
 					break
 				}
 				message := fmt.Sprintf("data: %s\n\n", msgStr)
-				c.Writer.WriteString(message)
+				_, err = c.Writer.WriteString(message)
+				if err != nil {
+					panic(err)
+				}
 				c.Writer.Flush()
 				time.Sleep(1 * time.Second)
 			}
