@@ -6,13 +6,10 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	"github.com/open-source-cloud/realtime/internal/channels"
+	"github.com/sirupsen/logrus"
 )
 
-func WebSocket(request *http.Request, writer gin.ResponseWriter, client *channels.Client, channel *channels.Channel) {
-	if err := channel.Subscribe(client); err != nil {
-		panic(err)
-	}
-
+func WebSocket(request *http.Request, writer gin.ResponseWriter, client *channels.Client, channel *channels.Channel, logger *logrus.Entry) {
 	upgrader := websocket.Upgrader{
 		ReadBufferSize:  1024,
 		WriteBufferSize: 1024,
@@ -20,6 +17,7 @@ func WebSocket(request *http.Request, writer gin.ResponseWriter, client *channel
 
 	conn, err := upgrader.Upgrade(writer, request, nil)
 	if err != nil {
+		logger.Errorf("error upgrading connection to websocket, err: %v", err)
 		panic(err)
 	}
 
@@ -28,34 +26,41 @@ func WebSocket(request *http.Request, writer gin.ResponseWriter, client *channel
 		for {
 			msg := <-msgChan
 			if msg.ClientID != client.ID {
+				logger.Infof("serializing and writing msg %s to buffer", msg.ID)
 				msgStr, err := msg.MessageToJSON()
 				if err != nil {
-					panic(err)
+					logger.Errorf("error serializing msg %s to json, err: %v", msg.ID, err)
+					break
 				}
 				if err := conn.WriteMessage(websocket.TextMessage, []byte(msgStr)); err != nil {
-					panic(err)
+					logger.Errorf("error writing msg %s on buffer, err: %v", msg.ID, err)
+					break
 				}
+				logger.Infof("msg %s was written to buffer for client %s", msg.ID, client.ID)
+			} else {
+				logger.Warnf("not writing self msg %s to this client %s", msg.ID, client.ID)
 			}
 		}
 	}()
 
 	// Closes WS client connection
-	defer func() {
-		conn.Close()
-		channel.DeleteClient(client)
-	}()
+	defer conn.Close()
 
 	// Read WS messages
 	for {
 		messageType, payload, err := conn.ReadMessage()
 		if err != nil {
+			logger.Errorf("error reading message from buffer, err: %v", err)
 			break
 		}
 		msg := channels.NewMessage(channel.ID, client.ID, string(payload))
+		logger.Infof("sending %s msg to all clients", msg.ID)
 		if messageType == websocket.TextMessage {
 			if err := channel.BroadcastMessage(msg); err != nil {
+				logger.Errorf("error broadcasting msg %s to clients, err: %v", msg.ID, err)
 				break
 			}
+			logger.Infof("msg %s has been sent to all client", msg.ID)
 		}
 	}
 }

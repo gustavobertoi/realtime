@@ -71,11 +71,3 @@ func (c *Channel) DeleteClient(client *Client) {
 func (c *Channel) AddClient(client *Client) {
 	c.store.Set(client.ID, client)
 }
-
-func (c *Channel) IsWebSocket() bool {
-	return c.Type == WebSocket
-}
-
-func (c *Channel) IsSSE() bool {
-	return c.Type == ServerSentEvents
-}

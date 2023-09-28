@@ -63,15 +63,21 @@ func channelById(c *gin.Context, conf *config.Config) {
 
 	logger.Infof("client %s from channel %s has been created, upgrading connection to %s", client.ID, channelID, channel.Type)
 
-	if channel.IsWebSocket() {
-		drivers.WebSocket(c.Request, c.Writer, client, channel)
-		return
+	if err := channel.Subscribe(client); err != nil {
+		logger.Errorf("error subscribing client on adapter: %v", err)
+		panic(err)
 	}
 
-	if channel.IsSSE() {
-		drivers.NewSSE(c, channel, client)
-		return
+	switch channel.Type {
+	case channels.WebSocket:
+		drivers.WebSocket(c.Request, c.Writer, client, channel, logger)
+	case channels.ServerSentEvents:
+		drivers.NewSSE(c, channel, client, logger)
 	}
+
+	channel.DeleteClient(client)
+
+	logger.Warnf("the channel %s connection with the client %s has ended", channel.ID, client.ID)
 }
 
 func pushServerMessage(c *gin.Context, conf *config.Config) {
