@@ -7,7 +7,7 @@ on:
     branches: [main]
 
 env:
-  DOCKER_IMAGE_TAG: ghcr.io/opensource-cloud/realtime:latest
+  DOCKER_IMAGE_TAG: ghcr.io/open-source-cloud/realtime:latest
 
 jobs:
   lint:
@@ -22,8 +22,6 @@ jobs:
   publish-image:
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    needs:
-      - release
     steps:
       - uses: actions/checkout@v2
       - uses: docker/login-action@v1
