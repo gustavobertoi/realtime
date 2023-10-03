@@ -3,9 +3,8 @@ package channels
 type (
 	CreateChannelDTO struct {
 		ID                      string `json:"id"`
-		Name                    string `json:"name"`
-		MaxOfChannelConnections int    `json:"max_of_connections"`
 		Type                    string `json:"type"`
+		MaxOfChannelConnections int    `json:"max_of_connections"`
 	}
 	CreateClientDTO struct {
 		ID        string

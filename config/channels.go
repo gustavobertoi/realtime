@@ -3,9 +3,8 @@ package config
 import (
 	"context"
 
-	"github.com/open-source-cloud/realtime/internal/channels"
-	memory_adapter "github.com/open-source-cloud/realtime/pkg/pubsub/memory"
-	redis_adapter "github.com/open-source-cloud/realtime/pkg/pubsub/redis"
+	"github.com/open-source-cloud/realtime/channels"
+	"github.com/open-source-cloud/realtime/pkg/pubsub"
 )
 
 // PubSub adapters
@@ -40,7 +39,6 @@ func (c *Config) CreateChannelsFromConfig() error {
 		for _, dto := range c.rootConfig.Channels {
 			channel, err := channels.NewChannel(&channels.CreateChannelDTO{
 				ID:                      dto.ID,
-				Name:                    dto.Name,
 				Type:                    dto.Type,
 				MaxOfChannelConnections: dto.Config.MaxOfConnections,
 			}, ca.consumer, ca.producer)
@@ -53,30 +51,30 @@ func (c *Config) CreateChannelsFromConfig() error {
 	return nil
 }
 
-func createChannelAdapter(pubsub *PubSubDTO) (*channelAdapter, error) {
-	switch pubsub.Driver {
+func createChannelAdapter(dto *PubSubDTO) (*channelAdapter, error) {
+	switch dto.Driver {
 	case memoryDriver:
-		return createMemoryChannelAdapter(pubsub)
+		return createMemoryChannelAdapter(dto)
 	case redisDriver:
-		return createRedisChannelAdapter(pubsub)
+		return createRedisChannelAdapter(dto)
 	}
 	return nil, errDriverNotSupported
 }
 
-func createMemoryChannelAdapter(pubsub *PubSubDTO) (*channelAdapter, error) {
-	memoryAdapter := memory_adapter.NewMemmoryAdapter()
+func createMemoryChannelAdapter(dto *PubSubDTO) (*channelAdapter, error) {
+	memoryAdapter := pubsub.NewMemmoryAdapter()
 	return &channelAdapter{
 		consumer: memoryAdapter,
 		producer: memoryAdapter,
 	}, nil
 }
 
-func createRedisChannelAdapter(pubsub *PubSubDTO) (*channelAdapter, error) {
-	if pubsub.Redis == nil {
+func createRedisChannelAdapter(dto *PubSubDTO) (*channelAdapter, error) {
+	if dto.Redis == nil {
 		return nil, errRedisPubSubAdapterNotDefined
 	}
-	redisAdapter, err := redis_adapter.NewRedisAdapter(context.Background(), &redis_adapter.RedisConfig{
-		URL: pubsub.Redis.URL,
+	redisAdapter, err := pubsub.NewRedisAdapter(context.Background(), &pubsub.RedisConfig{
+		URL: dto.Redis.URL,
 	})
 	if err != nil {
 		return nil, err

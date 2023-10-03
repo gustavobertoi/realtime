@@ -1,4 +1,4 @@
-package redis_adapter
+package pubsub
 
 import (
 	"context"
@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/go-redis/redis/v8"
-	"github.com/open-source-cloud/realtime/internal/channels"
+	"github.com/open-source-cloud/realtime/channels"
 )
 
 type RedisConfig struct {
@@ -70,8 +70,7 @@ func (ra *RedisAdapter) Send(message *channels.Message) error {
 		Stream: topic,
 		Values: map[string]interface{}{key: value},
 	}
-	_, err = ra.client.XAdd(ra.ctx, streamArgs).Result()
-	return err
+	return ra.client.XAdd(ra.ctx, streamArgs).Err()
 }
 
 func (ra *RedisAdapter) Subscribe(client *channels.Client) error {

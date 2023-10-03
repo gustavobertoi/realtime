@@ -1,7 +1,7 @@
-package memory_adapter
+package pubsub
 
 import (
-	"github.com/open-source-cloud/realtime/internal/channels"
+	"github.com/open-source-cloud/realtime/channels"
 )
 
 type MemoryAdapter struct {

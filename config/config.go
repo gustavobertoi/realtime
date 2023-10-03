@@ -14,9 +14,14 @@ type Config struct {
 	rootConfig   *RootConfigDTO
 }
 
-func NewConfig() *Config {
+var conf *Config
+
+func GetConfig() *Config {
+	if conf != nil {
+		return conf
+	}
 	appDebug := os.Getenv("APP_DEBUG")
-	c := &Config{
+	conf = &Config{
 		appDebug:     appDebug == "1",
 		port:         8080,
 		channelStore: store.NewMemoryStore(),
@@ -33,7 +38,7 @@ func NewConfig() *Config {
 			Channels: make(map[string]*ChannelDTO),
 		},
 	}
-	return c
+	return conf
 }
 
 func (c *Config) GetPort() string {

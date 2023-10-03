@@ -13,7 +13,6 @@ type (
 	}
 	Channel struct {
 		ID     string         `json:"id"`
-		Name   string         `json:"name"`
 		Config *ChannelConfig `json:"config"`
 		Type   string         `json:"type"`
 
@@ -25,8 +24,7 @@ type (
 
 func NewChannel(dto *CreateChannelDTO, consumer ConsumerAdapter, producer ProducerAdapter) (*Channel, error) {
 	c := &Channel{
-		ID:   dto.ID,
-		Name: dto.Name,
+		ID: dto.ID,
 		Config: &ChannelConfig{
 			MaxOfChannelConnections: dto.MaxOfChannelConnections,
 		},

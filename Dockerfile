@@ -7,7 +7,7 @@ WORKDIR /app
 COPY . /app
 
 RUN go mod download
-RUN CGO_ENABLED=0 go build -o bin/realtime .
+RUN CGO_ENABLED=0 go build -o bin/realtime /app/cmd/api/main.go
 
 ## Runnable container
 

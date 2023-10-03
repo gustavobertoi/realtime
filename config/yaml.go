@@ -49,21 +49,19 @@ func getConfigFilePath() string {
 	return filePath
 }
 
-func (c *Config) LoadConfigFromYaml() {
+func (c *Config) LoadConfigFromYaml() error {
 	filePath := getConfigFilePath()
 	file, err := os.ReadFile(filePath)
-	// NOTE: Means that file does not exists in container memory (skipping it)
 	if err != nil {
-		return
+		return err
 	}
 	var schema *RootConfigDTO
 	err = yaml.Unmarshal(file, &schema)
-	// NOTE: Error reading config file and parsing it (throw error?)
 	if err != nil {
-		panic(err)
+		return err
 	}
-	// TODO: Add a validation method to validate all nested props/structs
 	c.rootConfig = schema
+	return nil
 }
 
 func (c *Config) GetServerConfig() *ServerDTO {

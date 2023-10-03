@@ -13,7 +13,7 @@
       const channelId = "f71a6fb5-8962-48f4-a0dd-5cf60c42a70f";
       const clientId = crypto.randomUUID();
       const eventSource = new EventSource(
-        `${host}/channels/${channelId}?clientId=${clientId}`
+        `${host}/api/v1/channels/${channelId}?clientId=${clientId}`
       );
 
       const messages = [];
