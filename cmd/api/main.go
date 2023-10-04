@@ -31,8 +31,12 @@ func main() {
 	}
 
 	apiV1 := r.Group("/api/v1")
+
+	// Channels
+	apiV1.POST("/channels", handlers.CreateNewChannelHandler)
 	apiV1.GET("/channels/:channelId", handlers.UpgradeChannelConnectionHandler)
-	apiV1.POST("/channels/:channelId", handlers.SendServerMessage)
+
+	apiV1.POST("/channels/:channelId/messages", handlers.SendServerMessageHandler)
 
 	if err := r.Run(c.GetPort()); err != nil {
 		log.Fatal(err.Error())

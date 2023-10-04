@@ -37,35 +37,47 @@ func (c *Config) CreateChannelsFromConfig() error {
 	}
 	if len(c.rootConfig.Channels) >= 1 {
 		for _, dto := range c.rootConfig.Channels {
-			channel, err := channels.NewChannel(
-				&channels.CreateChannelDTO{
-					ID:                      dto.ID,
-					Type:                    dto.Type,
-					MaxOfChannelConnections: dto.MaxOfChannelConnections,
-				},
-				ca.consumer,
-				ca.producer,
-			)
-			if err != nil {
-				return err
-			}
-			c.channelStore.Set(channel.ID, channel)
+			c.CreateChannel(dto, ca)
 		}
 	}
 	return nil
 }
 
+func (c *Config) CreateChannel(dto *channels.CreateChannelDTO, ca *channelAdapter) (*channels.Channel, error) {
+	if ca == nil {
+		memoryAdapter, err := createMemoryChannelAdapter()
+		if err != nil {
+			return nil, err
+		}
+		ca = memoryAdapter
+	}
+	channel, err := channels.NewChannel(
+		&channels.CreateChannelDTO{
+			ID:                      dto.ID,
+			Type:                    dto.Type,
+			MaxOfChannelConnections: dto.MaxOfChannelConnections,
+		},
+		ca.consumer,
+		ca.producer,
+	)
+	if err != nil {
+		return nil, err
+	}
+	c.channelStore.Set(channel.ID, channel)
+	return channel, nil
+}
+
 func createChannelAdapter(ps *PubSub) (*channelAdapter, error) {
 	switch ps.Driver {
 	case memoryDriver:
-		return createMemoryChannelAdapter(ps)
+		return createMemoryChannelAdapter()
 	case redisDriver:
 		return createRedisChannelAdapter(ps)
 	}
 	return nil, errDriverNotSupported
 }
 
-func createMemoryChannelAdapter(ps *PubSub) (*channelAdapter, error) {
+func createMemoryChannelAdapter() (*channelAdapter, error) {
 	memoryAdapter := pubsub.NewMemmoryAdapter()
 	return &channelAdapter{
 		consumer: memoryAdapter,
