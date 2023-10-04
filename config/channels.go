@@ -37,7 +37,10 @@ func (c *Config) CreateChannelsFromConfig() error {
 	}
 	if len(c.rootConfig.Channels) >= 1 {
 		for _, dto := range c.rootConfig.Channels {
-			c.CreateChannel(dto, ca)
+			_, err := c.CreateChannel(dto, ca)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil
