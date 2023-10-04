@@ -10,6 +10,7 @@ Overview:
 - [System design](#system-design-architecture)
 - [Features](#features)
 - [How to use with docker](#how-to-use-with-docker)
+- [License](./LICENSE)
 
 ---
 
