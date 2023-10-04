@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/open-source-cloud/realtime/channels"
 	"github.com/open-source-cloud/realtime/pkg/store"
 )
 
@@ -26,16 +27,16 @@ func GetConfig() *Config {
 		port:         8080,
 		channelStore: store.NewMemoryStore(),
 		rootConfig: &RootConfigDTO{
-			Server: &ServerDTO{
+			Server: &Server{
 				AllowCreateNewChannels:  true,
 				AllowPushServerMessages: true,
 				RenderChatHTML:          false,
 				RenderNotificationsHTML: false,
 			},
-			PubSub: &PubSubDTO{
+			PubSub: &PubSub{
 				Driver: memoryDriver,
 			},
-			Channels: make(map[string]*ChannelDTO),
+			Channels: make(map[string]*channels.CreateChannelDTO),
 		},
 	}
 	return conf

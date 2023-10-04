@@ -37,11 +37,15 @@ func (c *Config) CreateChannelsFromConfig() error {
 	}
 	if len(c.rootConfig.Channels) >= 1 {
 		for _, dto := range c.rootConfig.Channels {
-			channel, err := channels.NewChannel(&channels.CreateChannelDTO{
-				ID:                      dto.ID,
-				Type:                    dto.Type,
-				MaxOfChannelConnections: dto.Config.MaxOfConnections,
-			}, ca.consumer, ca.producer)
+			channel, err := channels.NewChannel(
+				&channels.CreateChannelDTO{
+					ID:                      dto.ID,
+					Type:                    dto.Type,
+					MaxOfChannelConnections: dto.MaxOfChannelConnections,
+				},
+				ca.consumer,
+				ca.producer,
+			)
 			if err != nil {
 				return err
 			}
@@ -51,17 +55,17 @@ func (c *Config) CreateChannelsFromConfig() error {
 	return nil
 }
 
-func createChannelAdapter(dto *PubSubDTO) (*channelAdapter, error) {
-	switch dto.Driver {
+func createChannelAdapter(ps *PubSub) (*channelAdapter, error) {
+	switch ps.Driver {
 	case memoryDriver:
-		return createMemoryChannelAdapter(dto)
+		return createMemoryChannelAdapter(ps)
 	case redisDriver:
-		return createRedisChannelAdapter(dto)
+		return createRedisChannelAdapter(ps)
 	}
 	return nil, errDriverNotSupported
 }
 
-func createMemoryChannelAdapter(dto *PubSubDTO) (*channelAdapter, error) {
+func createMemoryChannelAdapter(ps *PubSub) (*channelAdapter, error) {
 	memoryAdapter := pubsub.NewMemmoryAdapter()
 	return &channelAdapter{
 		consumer: memoryAdapter,
@@ -69,12 +73,12 @@ func createMemoryChannelAdapter(dto *PubSubDTO) (*channelAdapter, error) {
 	}, nil
 }
 
-func createRedisChannelAdapter(dto *PubSubDTO) (*channelAdapter, error) {
-	if dto.Redis == nil {
+func createRedisChannelAdapter(ps *PubSub) (*channelAdapter, error) {
+	if ps.Redis == nil {
 		return nil, errRedisPubSubAdapterNotDefined
 	}
 	redisAdapter, err := pubsub.NewRedisAdapter(context.Background(), &pubsub.RedisConfig{
-		URL: dto.Redis.URL,
+		URL: ps.Redis.URL,
 	})
 	if err != nil {
 		return nil, err

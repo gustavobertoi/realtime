@@ -5,17 +5,17 @@ server:
   render_notifications_html: true
 
 pubsub:
-  driver: "MEMORY"
+  driver: "REDIS"
+  redis:
+    url: "redis://default:realtime@localhost:6379"
 
 channels:
   my-chat-example:
     id: "742fc7fe-1527-4184-8945-10b30bf01347"
     type: "WS"
-    config:
-      max_of_connections: 100
+    max_of_channel_connections: 100
 
   my-notification-example:
     id: "f71a6fb5-8962-48f4-a0dd-5cf60c42a70f"
     type: "SSE"
-    config:
-      max_of_connections: 100
+    max_of_channel_connections: 100

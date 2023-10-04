@@ -9,7 +9,7 @@ import (
 )
 
 func SendServerMessage(c *gin.Context) {
-	var dto *channels.SendServerMessageDTO
+	var dto = &channels.SendServerMessageDTO{}
 	err := c.BindJSON(&dto)
 	if err != nil {
 		// TODO: improve validations
