@@ -1,33 +1,43 @@
 package pubsub
 
 import (
+	"time"
+
 	"github.com/open-source-cloud/realtime/channels"
 )
 
 type MemoryAdapter struct {
 	channels.ProducerAdapter
 	channels.ConsumerAdapter
-	memoryCh chan *channels.Message
+	msgCh   chan *channels.Message
+	clients []*channels.Client
 }
 
 func NewMemmoryAdapter() *MemoryAdapter {
-	return &MemoryAdapter{
-		memoryCh: make(chan *channels.Message),
+	ma := &MemoryAdapter{
+		msgCh: make(chan *channels.Message),
 	}
+	go ma.sendMessageToAllClientsHandler()
+	return ma
 }
 
 func (ma *MemoryAdapter) Send(msg *channels.Message) error {
-	ma.memoryCh <- msg
+	ma.msgCh <- msg
 	return nil
 }
 
 func (ma *MemoryAdapter) Subscribe(client *channels.Client) error {
-	ch := client.MessageChan()
-	go func() {
-		for {
-			msg := <-ma.memoryCh
+	ma.clients = append(ma.clients, client)
+	return nil
+}
+
+func (ma *MemoryAdapter) sendMessageToAllClientsHandler() {
+	for {
+		msg := <-ma.msgCh
+		for _, client := range ma.clients {
+			ch := client.MessageChan()
 			ch <- msg
 		}
-	}()
-	return nil
+		time.Sleep(2 * time.Second)
+	}
 }
