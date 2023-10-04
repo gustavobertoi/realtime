@@ -1,0 +1,22 @@
+version: "3"
+
+services:
+  realtime-redis:
+    image: "bitnami/redis:latest"
+    environment:
+      REDIS_PASSWORD: realtime
+    ports:
+      - 6379:6379
+    volumes:
+      - realtime-redis-volume:/bitnami/redis/data
+    networks:
+      - realtime-network
+
+volumes:
+  realtime-redis-volume:
+    driver: local
+
+networks:
+  realtime-network:
+    external: true
+    driver: bridge
