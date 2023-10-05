@@ -11,6 +11,16 @@ import (
 func CreateNewChannelHandler(c *gin.Context) {
 	logger := config.NewLogger("[POST] /channels")
 
+	svConf := conf.GetServerConfig()
+
+	if !svConf.AllowCreateNewChannels {
+		logger.Errorf("not allowed to create new channels")
+		c.IndentedJSON(http.StatusForbidden, gin.H{
+			"message": "server are not allowed to create new channels",
+		})
+		return
+	}
+
 	var dto = &channels.CreateChannelDTO{}
 	err := c.BindJSON(&dto)
 	if err != nil {
