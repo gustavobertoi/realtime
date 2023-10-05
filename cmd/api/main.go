@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/open-source-cloud/realtime/config"
 	"github.com/open-source-cloud/realtime/handlers"
@@ -21,6 +22,10 @@ func main() {
 	r.Use(gin.Recovery())
 
 	svConf := c.GetServerConfig()
+
+	if svConf.AllowAllOrigins {
+		r.Use(cors.Default())
+	}
 
 	if svConf.RenderChatHTML {
 		r.Static("/chat", "./web/chat")

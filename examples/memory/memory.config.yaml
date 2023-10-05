@@ -3,6 +3,7 @@ server:
   allow_push_server_messages: true
   render_chat_html: true
   render_notifications_html: true
+  allow_all_origins: true
 
 pubsub:
   driver: "MEMORY"
