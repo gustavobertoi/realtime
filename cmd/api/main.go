@@ -28,11 +28,11 @@ func main() {
 	}
 
 	if svConf.RenderChatHTML {
-		r.Static("/chat", "./web/chat")
+		r.Static("/web/chat", "./web/chat")
 	}
 
 	if svConf.RenderNotificationsHTML {
-		r.Static("/notifications", "./web/notifications")
+		r.Static("/web/notifications", "./web/notifications")
 	}
 
 	apiV1 := r.Group("/api/v1")
