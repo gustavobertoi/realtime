@@ -4,9 +4,9 @@ import "github.com/open-source-cloud/realtime/pkg/uuid"
 
 type Client struct {
 	ID        string `json:"id"`
-	ChannelID string `json:"channel_id"`
-	UserAgent string `json:"user_agent"`
-	IPAddress string `json:"ip_address"`
+	ChannelID string `json:"channelId"`
+	UserAgent string `json:"userAgent"`
+	IPAddress string `json:"ipAddress"`
 	msgChan   chan *Message
 }
 

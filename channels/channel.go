@@ -9,7 +9,7 @@ const (
 
 type (
 	ChannelConfig struct {
-		MaxOfChannelConnections int `json:"max_of_channels_connections"`
+		MaxOfChannelConnections int `json:"maxOfChannelConnections"`
 	}
 	Channel struct {
 		ID     string         `json:"id"`

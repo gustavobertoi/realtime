@@ -9,10 +9,10 @@ import (
 
 type Message struct {
 	ID        string    `json:"id"`
-	ChannelID string    `json:"channel_id"`
-	ClientID  string    `json:"client_id"`
+	ChannelID string    `json:"channelId"`
+	ClientID  string    `json:"clientId"`
 	Payload   string    `json:"payload"`
-	CreatedAt time.Time `json:"created_at"`
+	CreatedAt time.Time `json:"createdAt"`
 }
 
 func NewMessage(channelID string, clientID string, payload string) *Message {
