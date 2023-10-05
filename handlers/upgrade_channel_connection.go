@@ -42,6 +42,15 @@ func UpgradeChannelConnectionHandler(c *gin.Context) {
 		UserAgent: userAgent,
 		IPAddress: ip,
 	})
+
+	if channel.HasClient(client) {
+		logger.Warnf("client %s already connected with channel %s returning 409", client.ID, channelID)
+		c.IndentedJSON(http.StatusConflict, gin.H{
+			"message": fmt.Sprintf("client %s is already connected on channel, please disconnect it before connect it again", client.ID),
+		})
+		return
+	}
+
 	channel.AddClient(client)
 
 	upgradeConnection := c.Query("upgrade")
@@ -63,11 +72,13 @@ func UpgradeChannelConnectionHandler(c *gin.Context) {
 		panic(err)
 	}
 
+	serverConf := conf.GetServerConfig()
+
 	switch channel.Type {
 	case channels.WebSocket:
-		WebSocketHandler(c, channel, client, logger)
+		WebSocketHandler(c, serverConf, channel, client, logger)
 	case channels.ServerSentEvents:
-		ServerSentEventsHandler(c, channel, client, logger)
+		ServerSentEventsHandler(c, serverConf, channel, client, logger)
 	}
 
 	channel.DeleteClient(client)

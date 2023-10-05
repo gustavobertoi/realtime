@@ -1,16 +1,20 @@
 package handlers
 
 import (
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	"github.com/open-source-cloud/realtime/channels"
 	"github.com/open-source-cloud/realtime/config"
 )
 
-func WebSocketHandler(c *gin.Context, channel *channels.Channel, client *channels.Client, logger *config.Logger) {
+func WebSocketHandler(c *gin.Context, serverConf *config.Server, channel *channels.Channel, client *channels.Client, logger *config.Logger) {
+	// TODO: Improve websocket upgrade connections (read those infos from server config)
 	upgrader := websocket.Upgrader{
 		ReadBufferSize:  1024,
 		WriteBufferSize: 1024,
+		CheckOrigin:     func(r *http.Request) bool { return serverConf.AllowAllOrigins },
 	}
 
 	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)

@@ -69,3 +69,7 @@ func (c *Channel) DeleteClient(client *Client) {
 func (c *Channel) AddClient(client *Client) {
 	c.store.Set(client.ID, client)
 }
+
+func (c *Channel) HasClient(client *Client) bool {
+	return c.store.Has(client.ID)
+}

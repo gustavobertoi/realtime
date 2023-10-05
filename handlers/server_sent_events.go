@@ -10,7 +10,7 @@ import (
 	"github.com/open-source-cloud/realtime/config"
 )
 
-func ServerSentEventsHandler(c *gin.Context, channel *channels.Channel, client *channels.Client, logger *config.Logger) {
+func ServerSentEventsHandler(c *gin.Context, serverConfig *config.Server, channel *channels.Channel, client *channels.Client, logger *config.Logger) {
 	c.Writer.Header().Set("Content-Type", "text/event-stream")
 	c.Writer.Header().Set("Cache-Control", "no-cache")
 	c.Writer.Header().Set("Connection", "keep-alive")
