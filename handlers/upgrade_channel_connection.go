@@ -59,6 +59,7 @@ func UpgradeChannelConnectionHandler(c *gin.Context) {
 	}
 
 	if upgradeConnection == "0" {
+		channel.DeleteClient(client)
 		c.IndentedJSON(http.StatusOK, gin.H{
 			"message": "OK",
 		})

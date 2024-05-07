@@ -4,4 +4,7 @@ tmp/
 resources/
 realtime/
 
+examples/kafka/**.yaml
+!examples/kafka/kafka.config.yaml
+
 .env

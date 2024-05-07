@@ -11,6 +11,7 @@ import (
 const (
 	memoryDriver = "MEMORY"
 	redisDriver  = "REDIS"
+	kafkaDriver  = "KAFKA"
 )
 
 type channelAdapter struct {
@@ -76,8 +77,11 @@ func createChannelAdapter(ps *PubSub) (*channelAdapter, error) {
 		return createMemoryChannelAdapter()
 	case redisDriver:
 		return createRedisChannelAdapter(ps)
+	case kafkaDriver:
+		return createKafkaChannelAdapter(ps)
+	default:
+		return nil, errDriverNotSupported
 	}
-	return nil, errDriverNotSupported
 }
 
 func createMemoryChannelAdapter() (*channelAdapter, error) {
@@ -101,5 +105,25 @@ func createRedisChannelAdapter(ps *PubSub) (*channelAdapter, error) {
 	return &channelAdapter{
 		consumer: redisAdapter,
 		producer: redisAdapter,
+	}, nil
+}
+
+func createKafkaChannelAdapter(ps *PubSub) (*channelAdapter, error) {
+	if ps.Kafka == nil {
+		return nil, errKafkaPubSubAdapterNotDefined
+	}
+	kafkaAdapter, err := pubsub.NewKafkaAdapter(context.Background(), &pubsub.KafkaConfig{
+		Username:   ps.Kafka.Username,
+		Password:   ps.Kafka.Password,
+		ServerAddr: ps.Kafka.ServerAddr,
+		Topic:      ps.Kafka.Topic,
+		GroupId:    ps.Kafka.GroupId,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &channelAdapter{
+		consumer: kafkaAdapter,
+		producer: kafkaAdapter,
 	}, nil
 }
