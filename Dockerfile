@@ -18,6 +18,4 @@ COPY --from=build /app/web /web
 
 EXPOSE 8080
 
-USER nonroot:nonroot
-
 CMD ["/realtime"]
