@@ -1,41 +1,44 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Notifications</title>
-  </head>
-  <body>
-    <div id="notifications"></div>
 
-    <script>
-      const host = "http://localhost:8080";
-      const channelId = "f71a6fb5-8962-48f4-a0dd-5cf60c42a70f";
-      const clientId = crypto.randomUUID();
-      const eventSource = new EventSource(
-        `${host}/api/v1/channels/${channelId}?clientId=${clientId}`
-      );
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Notifications</title>
+</head>
 
-      const messages = [];
+<body>
+  <div id="notifications"></div>
 
-      eventSource.addEventListener("open", () => {
-        console.log("client connected");
-      });
+  <script>
+    const host = "http://localhost:8080";
+    const channelId = "f71a6fb5-8962-48f4-a0dd-5cf60c42a70f";
+    const clientId = crypto.randomUUID();
+    const eventSource = new EventSource(
+      `${host}/api/v1/channels/${channelId}?clientId=${clientId}`
+    );
 
-      eventSource.addEventListener("error", (e) => {
-        console.log("error from server: ", error);
-      });
+    const messages = [];
 
-      eventSource.addEventListener("message", (e) => {
-        console.log("message received", e.data);
-        messages.push(JSON.parse(e.data));
-        const notifications = document.getElementById("notifications");
-        notifications.innerHTML = `<pre>${JSON.stringify(
-          messages,
-          null,
-          2
-        )}</pre>`;
-      });
-    </script>
-  </body>
+    eventSource.addEventListener("open", () => {
+      console.log("client connected");
+    });
+
+    eventSource.addEventListener("error", (e) => {
+      console.log("error from server: ", error);
+    });
+
+    eventSource.addEventListener("message", (e) => {
+      console.log("message received", e.data);
+      messages.push(JSON.parse(e.data));
+      const notifications = document.getElementById("notifications");
+      notifications.innerHTML = `<pre>${JSON.stringify(
+        messages,
+        null,
+        2
+      )}</pre>`;
+    });
+  </script>
+</body>
+
 </html>

@@ -1,6 +1,6 @@
 package channels
 
-import "github.com/open-source-cloud/realtime/pkg/store"
+import "github.com/gustavobertoi/realtime/pkg/store"
 
 const (
 	WebSocket        = "WS"

@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/open-source-cloud/realtime/pkg/uuid"
+	"github.com/gustavobertoi/realtime/pkg/uuid"
 )
 
 type Message struct {

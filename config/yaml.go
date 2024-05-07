@@ -3,7 +3,7 @@ package config
 import (
 	"os"
 
-	"github.com/open-source-cloud/realtime/channels"
+	"github.com/gustavobertoi/realtime/channels"
 	"gopkg.in/yaml.v2"
 )
 
@@ -18,11 +18,18 @@ type (
 	PubSubRedis struct {
 		URL string `yaml:"url"`
 	}
+	PubSubKafka struct {
+		Username   string `yaml:"username"`
+		Password   string `yaml:"password"`
+		ServerAddr string `yaml:"server_addr"`
+		Topic      string `yaml:"topic"`
+		GroupId    string `yaml:"group_id"`
+	}
 	PubSub struct {
 		Driver string       `yaml:"driver"`
 		Redis  *PubSubRedis `yaml:"redis"`
+		Kafka  *PubSubKafka `yaml:"kafka"`
 	}
-
 	RootConfigDTO struct {
 		Server   *Server                               `yaml:"server"`
 		PubSub   *PubSub                               `yaml:"pubsub"`

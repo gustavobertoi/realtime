@@ -1,0 +1,26 @@
+server:
+  allow_create_new_channels: true
+  allow_push_server_messages: true
+  render_chat_html: true
+  render_notifications_html: true
+  allow_all_origins: true
+
+pubsub:
+  driver: "KAFKA"
+  kafka:
+    username: "YOUR_USERNAME"
+    password: "YOUR_PASSWORD"
+    server_addr: "YOUR_SERVER_ADDR"
+    topic: "YOUR_TOPIC"
+    group_id: "YOUR_GROUP_ID"
+
+channels:
+  my-chat-example:
+    id: "742fc7fe-1527-4184-8945-10b30bf01347"
+    type: "WS"
+    max_of_channel_connections: 100
+
+  my-notification-example:
+    id: "f71a6fb5-8962-48f4-a0dd-5cf60c42a70f"
+    type: "SSE"
+    max_of_channel_connections: 100

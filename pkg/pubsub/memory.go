@@ -3,7 +3,7 @@ package pubsub
 import (
 	"time"
 
-	"github.com/open-source-cloud/realtime/channels"
+	"github.com/gustavobertoi/realtime/channels"
 )
 
 type MemoryAdapter struct {
