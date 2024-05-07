@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/open-source-cloud/realtime/channels"
-	"github.com/open-source-cloud/realtime/pkg/store"
+	"github.com/gustavobertoi/realtime/channels"
+	"github.com/gustavobertoi/realtime/pkg/store"
 )
 
 type Config struct {

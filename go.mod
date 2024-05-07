@@ -1,4 +1,4 @@
-module github.com/open-source-cloud/realtime
+module github.com/gustavobertoi/realtime
 
 go 1.22
 

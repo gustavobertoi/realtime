@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"github.com/open-source-cloud/realtime/config"
+	"github.com/gustavobertoi/realtime/config"
 )
 
 var conf = config.GetConfig()

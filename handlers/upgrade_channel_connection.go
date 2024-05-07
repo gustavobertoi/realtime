@@ -6,8 +6,8 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/open-source-cloud/realtime/channels"
-	"github.com/open-source-cloud/realtime/config"
+	"github.com/gustavobertoi/realtime/channels"
+	"github.com/gustavobertoi/realtime/config"
 )
 
 func UpgradeChannelConnectionHandler(c *gin.Context) {

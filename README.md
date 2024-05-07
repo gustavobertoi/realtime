@@ -79,7 +79,7 @@ version: "3"
 
 services:
   realtime-service:
-    image: ghcr.io/open-source-cloud/realtime:latest
+    image: ghcr.io/gustavobertoi/realtime:latest
     container_name: realtime-service
     environment:
       APP_DEBUG: "1"
@@ -147,7 +147,7 @@ services:
       - realtime-network
 
   realtime-service:
-    image: ghcr.io/open-source-cloud/realtime:latest
+    image: ghcr.io/gustavobertoi/realtime:latest
     container_name: realtime-service
     depends_on:
       - redis

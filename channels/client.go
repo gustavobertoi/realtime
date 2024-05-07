@@ -1,6 +1,6 @@
 package channels
 
-import "github.com/open-source-cloud/realtime/pkg/uuid"
+import "github.com/gustavobertoi/realtime/pkg/uuid"
 
 type Client struct {
 	ID        string `json:"id"`

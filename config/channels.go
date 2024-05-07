@@ -3,8 +3,8 @@ package config
 import (
 	"context"
 
-	"github.com/open-source-cloud/realtime/channels"
-	"github.com/open-source-cloud/realtime/pkg/pubsub"
+	"github.com/gustavobertoi/realtime/channels"
+	"github.com/gustavobertoi/realtime/pkg/pubsub"
 )
 
 // PubSub adapters

@@ -6,7 +6,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/open-source-cloud/realtime/channels"
+	"github.com/gustavobertoi/realtime/channels"
 	"github.com/segmentio/kafka-go"
 	"github.com/segmentio/kafka-go/sasl/scram"
 )
