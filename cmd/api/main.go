@@ -37,6 +37,10 @@ func main() {
 
 	apiV1 := r.Group("/api/v1")
 
+	apiV1.GET("/health", func(ctx *gin.Context) {
+		ctx.JSON(200, gin.H{"status": "UP"})
+	})
+
 	// Channels
 	apiV1.POST("/channels", handlers.CreateNewChannelHandler)
 	apiV1.GET("/channels/:channelId", handlers.UpgradeChannelConnectionHandler)
