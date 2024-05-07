@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/go-redis/redis/v8"
-	"github.com/gustavobertoi/realtime/channels"
+	"github.com/gustavobertoi/realtime/internal/channels"
 )
 
 type RedisConfig struct {

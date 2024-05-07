@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/gustavobertoi/realtime/channels"
+	"github.com/gustavobertoi/realtime/internal/channels"
 	"github.com/gustavobertoi/realtime/pkg/store"
 )
 

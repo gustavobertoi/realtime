@@ -5,8 +5,8 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	"github.com/gustavobertoi/realtime/config"
-	"github.com/gustavobertoi/realtime/handlers"
+	"github.com/gustavobertoi/realtime/internal/config"
+	"github.com/gustavobertoi/realtime/internal/handlers"
 )
 
 func main() {

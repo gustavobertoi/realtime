@@ -4,8 +4,8 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/gustavobertoi/realtime/channels"
-	"github.com/gustavobertoi/realtime/config"
+	"github.com/gustavobertoi/realtime/internal/channels"
+	"github.com/gustavobertoi/realtime/internal/config"
 )
 
 func CreateNewChannelHandler(c *gin.Context) {

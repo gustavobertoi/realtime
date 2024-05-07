@@ -3,7 +3,7 @@ package config
 import (
 	"os"
 
-	"github.com/gustavobertoi/realtime/channels"
+	"github.com/gustavobertoi/realtime/internal/channels"
 	"gopkg.in/yaml.v2"
 )
 

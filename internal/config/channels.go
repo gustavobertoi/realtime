@@ -3,7 +3,7 @@ package config
 import (
 	"context"
 
-	"github.com/gustavobertoi/realtime/channels"
+	"github.com/gustavobertoi/realtime/internal/channels"
 	"github.com/gustavobertoi/realtime/pkg/pubsub"
 )
 

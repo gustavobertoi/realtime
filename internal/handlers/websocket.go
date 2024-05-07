@@ -5,8 +5,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
-	"github.com/gustavobertoi/realtime/channels"
-	"github.com/gustavobertoi/realtime/config"
+	"github.com/gustavobertoi/realtime/internal/channels"
+	"github.com/gustavobertoi/realtime/internal/config"
 )
 
 func WebSocketHandler(c *gin.Context, serverConf *config.Server, channel *channels.Channel, client *channels.Client, logger *config.Logger) {
