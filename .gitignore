@@ -4,7 +4,14 @@ tmp/
 resources/
 realtime/
 
+examples/memory/**.yaml
+!examples/memory/memory.config.yaml
+
+examples/redis/**.yaml
+!examples/redis/redis.config.yaml
+
 examples/kafka/**.yaml
 !examples/kafka/kafka.config.yaml
+!examples/kafka/upstash_kafka.config.yaml
 
 .env

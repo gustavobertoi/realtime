@@ -8,9 +8,10 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gustavobertoi/realtime/internal/channels"
 	"github.com/gustavobertoi/realtime/internal/config"
+	"github.com/gustavobertoi/realtime/pkg/logs"
 )
 
-func ServerSentEventsHandler(c *gin.Context, serverConfig *config.Server, channel *channels.Channel, client *channels.Client, logger *config.Logger) {
+func ServerSentEventsHandler(c *gin.Context, conf *config.Config, channel *channels.Channel, client *channels.Client, logger *logs.Logger) {
 	c.Writer.Header().Set("Content-Type", "text/event-stream")
 	c.Writer.Header().Set("Cache-Control", "no-cache")
 	c.Writer.Header().Set("Connection", "keep-alive")

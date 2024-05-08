@@ -7,15 +7,13 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/gustavobertoi/realtime/internal/channels"
-	"github.com/gustavobertoi/realtime/internal/config"
+	"github.com/gustavobertoi/realtime/internal/dtos"
 )
 
-func UpgradeChannelConnectionHandler(c *gin.Context) {
-	logger := config.NewLogger("[POST] /api/v1/channels")
-
+func (h *Handler) UpgradeChannelConnectionHandler(c *gin.Context) {
 	channelID := c.Param("channelId")
-	channel, err := conf.GetChannelByID(channelID)
-	if err != nil {
+	channel := h.Conf.GetChannel(channelID)
+	if channel == nil {
 		c.IndentedJSON(http.StatusNotFound, gin.H{
 			"message": "Channel not found",
 		})
@@ -23,9 +21,8 @@ func UpgradeChannelConnectionHandler(c *gin.Context) {
 	}
 
 	if channel.IsMaxOfConnections() {
-		err := fmt.Errorf("maximum connection limit for this channel %s has been established", channelID)
 		c.IndentedJSON(http.StatusUnprocessableEntity, gin.H{
-			"message": err.Error(),
+			"message": fmt.Sprintf("maximum connection limit for this channel %s has been established", channelID),
 		})
 		return
 	}
@@ -36,7 +33,7 @@ func UpgradeChannelConnectionHandler(c *gin.Context) {
 	}
 	userAgent := c.Request.UserAgent()
 
-	client := channels.NewClient(&channels.CreateClientDTO{
+	client := channels.NewClient(&dtos.CreateClientDTO{
 		ID:        c.Query("clientId"),
 		ChannelID: channel.ID,
 		UserAgent: userAgent,
@@ -44,7 +41,7 @@ func UpgradeChannelConnectionHandler(c *gin.Context) {
 	})
 
 	if channel.HasClient(client) {
-		logger.Warnf("client %s already connected with channel %s returning 409", client.ID, channelID)
+		h.Logger.Warnf("client %s already connected with channel %s returning 409", client.ID, channelID)
 		c.IndentedJSON(http.StatusConflict, gin.H{
 			"message": fmt.Sprintf("client %s is already connected on channel, please disconnect it before connect it again", client.ID),
 		})
@@ -66,23 +63,21 @@ func UpgradeChannelConnectionHandler(c *gin.Context) {
 		return
 	}
 
-	logger.Infof("client %s from channel %s has been created, upgrading connection to %s", client.ID, channelID, channel.Type)
+	h.Logger.Infof("client %s from channel %s has been created, upgrading connection to %s", client.ID, channelID, channel.Type)
 
 	if err := channel.Subscribe(client); err != nil {
-		logger.Errorf("error subscribing client on adapter: %v", err)
+		h.Logger.Errorf("error subscribing client on adapter: %v", err)
 		panic(err)
 	}
 
-	serverConf := conf.GetServerConfig()
-
 	switch channel.Type {
 	case channels.WebSocket:
-		WebSocketHandler(c, serverConf, channel, client, logger)
+		WebSocketHandler(c, h.Conf, channel, client, h.Logger)
 	case channels.ServerSentEvents:
-		ServerSentEventsHandler(c, serverConf, channel, client, logger)
+		ServerSentEventsHandler(c, h.Conf, channel, client, h.Logger)
 	}
 
 	channel.DeleteClient(client)
 
-	logger.Warnf("the channel %s connection with the client %s has ended", channel.ID, client.ID)
+	h.Logger.Warnf("the channel %s connection with the client %s has ended", channel.ID, client.ID)
 }

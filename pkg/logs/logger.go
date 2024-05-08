@@ -1,4 +1,4 @@
-package config
+package logs
 
 import (
 	"io"
@@ -26,7 +26,6 @@ func NewLogger(p string) *Logger {
 	}
 }
 
-// Create Non-Formatted Logs
 func (l *Logger) Debug(v ...interface{}) {
 	l.debug.Println(v...)
 }

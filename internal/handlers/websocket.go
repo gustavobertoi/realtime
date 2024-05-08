@@ -7,14 +7,17 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/gustavobertoi/realtime/internal/channels"
 	"github.com/gustavobertoi/realtime/internal/config"
+	"github.com/gustavobertoi/realtime/pkg/logs"
 )
 
-func WebSocketHandler(c *gin.Context, serverConf *config.Server, channel *channels.Channel, client *channels.Client, logger *config.Logger) {
+func WebSocketHandler(c *gin.Context, conf *config.Config, channel *channels.Channel, client *channels.Client, logger *logs.Logger) {
 	// TODO: Improve websocket upgrade connections (read those infos from server config)
 	upgrader := websocket.Upgrader{
 		ReadBufferSize:  1024,
 		WriteBufferSize: 1024,
-		CheckOrigin:     func(r *http.Request) bool { return serverConf.AllowAllOrigins },
+		CheckOrigin: func(r *http.Request) bool {
+			return conf.Server.AllowAllOrigins
+		},
 	}
 
 	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)

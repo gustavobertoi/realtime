@@ -10,28 +10,23 @@ import (
 )
 
 func main() {
-	c := config.GetConfig()
-	if err := c.LoadConfigFromYaml(); err != nil {
-		log.Fatal(err.Error())
-	}
-	if err := c.CreateChannelsFromConfig(); err != nil {
-		log.Fatal(err.Error())
+	c, err := config.GetConfig()
+	if err != nil {
+		panic(err)
 	}
 
 	r := gin.New()
 	r.Use(gin.Recovery())
 
-	svConf := c.GetServerConfig()
-
-	if svConf.AllowAllOrigins {
+	if c.Server.AllowAllOrigins {
 		r.Use(cors.Default())
 	}
 
-	if svConf.RenderChatHTML {
+	if c.Server.RenderChatHTML {
 		r.Static("/web/chat", "./web/chat")
 	}
 
-	if svConf.RenderNotificationsHTML {
+	if c.Server.RenderNotificationsHTML {
 		r.Static("/web/notifications", "./web/notifications")
 	}
 
@@ -41,13 +36,15 @@ func main() {
 		ctx.JSON(200, gin.H{"status": "UP"})
 	})
 
+	handler := handlers.NewHandler(c)
+
 	// Channels
-	apiV1.POST("/channels", handlers.CreateNewChannelHandler)
-	apiV1.GET("/channels/:channelId", handlers.UpgradeChannelConnectionHandler)
+	apiV1.POST("/channels", handler.CreateNewChannelHandler)
+	apiV1.GET("/channels/:channelId", handler.UpgradeChannelConnectionHandler)
 
-	apiV1.POST("/channels/:channelId/messages", handlers.SendServerMessageHandler)
+	apiV1.POST("/channels/:channelId/messages", handler.UpgradeChannelConnectionHandler)
 
-	if err := r.Run(c.GetPort()); err != nil {
+	if err := r.Run(c.Port()); err != nil {
 		log.Fatal(err.Error())
 	}
 }

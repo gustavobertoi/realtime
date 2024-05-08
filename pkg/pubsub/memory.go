@@ -7,18 +7,20 @@ import (
 )
 
 type MemoryAdapter struct {
-	channels.ProducerAdapter
-	channels.ConsumerAdapter
 	msgCh   chan *channels.Message
 	clients []*channels.Client
 }
 
-func NewMemmoryAdapter() *MemoryAdapter {
+func NewMemoryAdapter() (*PubSub, error) {
 	ma := &MemoryAdapter{
 		msgCh: make(chan *channels.Message),
 	}
 	go ma.sendMessageToAllClientsHandler()
-	return ma
+	return &PubSub{
+		Driver:   MemoryDriver,
+		Consumer: ma,
+		Producer: ma,
+	}, nil
 }
 
 func (ma *MemoryAdapter) Send(msg *channels.Message) error {

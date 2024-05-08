@@ -7,39 +7,35 @@ import (
 	"time"
 
 	"github.com/gustavobertoi/realtime/internal/channels"
+	"github.com/gustavobertoi/realtime/internal/dtos"
 	"github.com/segmentio/kafka-go"
 	"github.com/segmentio/kafka-go/sasl/scram"
 )
 
 type (
-	KafkaConfig struct {
-		Username   string
-		Password   string
-		ServerAddr string
-		Topic      string
-		GroupId    string
-	}
-	KafkaAdapter struct {
-		channels.ProducerAdapter
-		channels.ConsumerAdapter
+	UpstashKafkaAdapter struct {
 		ctx    context.Context
-		config *KafkaConfig
+		config *dtos.UpstashKafkaConfig
 		writer *kafka.Writer
 		reader *kafka.Reader
 	}
 )
 
-func NewKafkaAdapter(ctx context.Context, config *KafkaConfig) (*KafkaAdapter, error) {
-	k := &KafkaAdapter{
+func NewUpstashKafkaAdapter(ctx context.Context, config *dtos.UpstashKafkaConfig) (*PubSub, error) {
+	uk := &UpstashKafkaAdapter{
 		ctx:    ctx,
 		config: config,
 		writer: nil,
 		reader: nil,
 	}
-	return k, nil
+	return &PubSub{
+		Driver:   UpstashKafkaDriver,
+		Consumer: uk,
+		Producer: uk,
+	}, nil
 }
 
-func (k *KafkaAdapter) Send(message *channels.Message) error {
+func (k *UpstashKafkaAdapter) Send(message *channels.Message) error {
 	if k.writer == nil {
 		mechanism, err := scram.Mechanism(scram.SHA256, k.config.Username, k.config.Password)
 		if err != nil {
@@ -68,7 +64,7 @@ func (k *KafkaAdapter) Send(message *channels.Message) error {
 	return err
 }
 
-func (k *KafkaAdapter) Subscribe(client *channels.Client) error {
+func (k *UpstashKafkaAdapter) Subscribe(client *channels.Client) error {
 	if k.reader == nil {
 		mechanism, err := scram.Mechanism(scram.SHA512, k.config.Username, k.config.Password)
 		if err != nil {

@@ -11,27 +11,30 @@ import (
 
 	"github.com/go-redis/redis/v8"
 	"github.com/gustavobertoi/realtime/internal/channels"
+	"github.com/gustavobertoi/realtime/internal/dtos"
 )
 
-type RedisConfig struct {
-	URL string
-}
-
 type RedisAdapter struct {
-	channels.ProducerAdapter
-	channels.ConsumerAdapter
 	client *redis.Client
 	ctx    context.Context
 }
 
-func NewRedisAdapter(ctx context.Context, c *RedisConfig) (*RedisAdapter, error) {
+func NewRedisAdapter(ctx context.Context, c *dtos.RedisConfig) (*PubSub, error) {
+	if c == nil {
+		return nil, NewPubSubError(RedisDriver, "redis config is nil")
+	}
 	opt, err := parseRedisURL(c.URL)
 	if err != nil {
-		return nil, err
+		return nil, NewPubSubError(RedisDriver, fmt.Sprintf("error parsing redis URL: %s", err.Error()))
 	}
-	return &RedisAdapter{
+	ra := &RedisAdapter{
 		client: redis.NewClient(opt),
 		ctx:    ctx,
+	}
+	return &PubSub{
+		Driver:   RedisDriver,
+		Consumer: ra,
+		Producer: ra,
 	}, nil
 }
 
@@ -64,7 +67,7 @@ func (ra *RedisAdapter) Send(message *channels.Message) error {
 	key := message.ID
 	value, err := message.MessageToJSON()
 	if err != nil {
-		return err
+		return NewPubSubError(RedisDriver, fmt.Sprintf("error serializing message to json: %s", err.Error()))
 	}
 	streamArgs := &redis.XAddArgs{
 		Stream: topic,
@@ -84,7 +87,8 @@ func (ra *RedisAdapter) Subscribe(client *channels.Client) error {
 			}
 			streams, err := ra.client.XRead(ra.ctx, &streamArgs).Result()
 			if err != nil {
-				log.Panicf("error reading topic %s from redis stream adapter, err: %v", topic, err)
+				log.Printf("error reading topic %s from redis stream adapter, err: %v", topic, err)
+				continue
 			}
 			stream := streams[0]
 			for _, xMsg := range stream.Messages {
@@ -92,7 +96,8 @@ func (ra *RedisAdapter) Subscribe(client *channels.Client) error {
 					rawMsg := value.(string)
 					msg, err := channels.MessageFromJSON(rawMsg)
 					if err != nil {
-						log.Panicf("error deserializing message from json, topic %s, err: %v", topic, err)
+						log.Printf("error deserializing message from json, topic %s, err: %v", topic, err)
+						continue
 					}
 					client.MessageChan() <- msg
 				}

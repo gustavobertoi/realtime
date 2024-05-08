@@ -1,6 +1,9 @@
 package channels
 
-import "github.com/gustavobertoi/realtime/pkg/store"
+import (
+	"github.com/gustavobertoi/realtime/internal/dtos"
+	"github.com/gustavobertoi/realtime/pkg/store"
+)
 
 const (
 	WebSocket        = "WS"
@@ -12,17 +15,16 @@ type (
 		MaxOfChannelConnections int `json:"maxOfChannelConnections"`
 	}
 	Channel struct {
-		ID     string         `json:"id"`
-		Config *ChannelConfig `json:"config"`
-		Type   string         `json:"type"`
-
+		ID       string         `json:"id"`
+		Config   *ChannelConfig `json:"config"`
+		Type     string         `json:"type"`
 		store    *store.MemoryStore
 		producer ProducerAdapter
 		consumer ConsumerAdapter
 	}
 )
 
-func NewChannel(dto *CreateChannelDTO, consumer ConsumerAdapter, producer ProducerAdapter) (*Channel, error) {
+func NewChannel(dto *dtos.CreateChannelDTO, consumer ConsumerAdapter, producer ProducerAdapter) (*Channel, error) {
 	c := &Channel{
 		ID: dto.ID,
 		Config: &ChannelConfig{

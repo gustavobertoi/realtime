@@ -6,16 +6,16 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/gustavobertoi/realtime/internal/channels"
-	"github.com/gustavobertoi/realtime/internal/config"
+	"github.com/gustavobertoi/realtime/internal/dtos"
+	"github.com/gustavobertoi/realtime/pkg/logs"
 )
 
-func SendServerMessageHandler(c *gin.Context) {
-	logger := config.NewLogger("[POST] /channels/:channelId/messages")
+func (h *Handler) SendServerMessageHandler(c *gin.Context) {
+	logger := logs.NewLogger("[POST] /channels/:channelId/messages")
 
-	var dto = &channels.SendServerMessageDTO{}
+	var dto = &dtos.SendServerMessageDTO{}
 	err := c.BindJSON(&dto)
 	if err != nil {
-		// TODO: improve validations
 		logger.Errorf("error validating server message, err %v", err)
 		c.IndentedJSON(http.StatusBadRequest, gin.H{
 			"message": "invalid body schema",
@@ -24,8 +24,8 @@ func SendServerMessageHandler(c *gin.Context) {
 	}
 
 	channelID := c.Param("channelId")
-	channel, err := conf.GetChannelByID(channelID)
-	if err != nil {
+	channel := h.Conf.GetChannel(channelID)
+	if channel == nil {
 		logger.Errorf("error getting channel by id %s, err: %v", channelID, err)
 		c.IndentedJSON(http.StatusNotFound, gin.H{
 			"message": "channel not found",

@@ -1,6 +1,9 @@
 package channels
 
-import "github.com/gustavobertoi/realtime/pkg/uuid"
+import (
+	"github.com/gustavobertoi/realtime/internal/dtos"
+	"github.com/gustavobertoi/realtime/pkg/uuid"
+)
 
 type Client struct {
 	ID        string `json:"id"`
@@ -10,7 +13,7 @@ type Client struct {
 	msgChan   chan *Message
 }
 
-func NewClient(data *CreateClientDTO) *Client {
+func NewClient(data *dtos.CreateClientDTO) *Client {
 	if data.ID == "" {
 		data.ID = uuid.NewUUID()
 	}
