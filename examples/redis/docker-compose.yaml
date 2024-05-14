@@ -1,6 +1,18 @@
 version: "3"
 
 services:
+  realtime:
+    image: "ghcr.io/gustavobertoi/realtime:latest"
+    environment:
+      APP_DEBUG: "1"
+      GIN_MODE: "debug"
+    ports:
+      - 4567:4567
+    networks:
+      - realtime-network
+    depends_on:
+      - realtime-redis
+
   realtime-redis:
     image: "bitnami/redis:latest"
     environment:
