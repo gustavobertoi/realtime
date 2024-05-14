@@ -7,11 +7,10 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gustavobertoi/realtime/internal/channels"
 	"github.com/gustavobertoi/realtime/internal/dtos"
-	"github.com/gustavobertoi/realtime/pkg/logs"
 )
 
 func (h *Handler) SendServerMessageHandler(c *gin.Context) {
-	logger := logs.NewLogger("[POST] /channels/:channelId/messages")
+	logger := h.Logger
 
 	var dto = &dtos.SendServerMessageDTO{}
 	err := c.BindJSON(&dto)

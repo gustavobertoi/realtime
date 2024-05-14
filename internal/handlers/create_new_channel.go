@@ -6,11 +6,10 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gustavobertoi/realtime/internal/channels"
 	"github.com/gustavobertoi/realtime/internal/dtos"
-	"github.com/gustavobertoi/realtime/pkg/logs"
 )
 
 func (h *Handler) CreateNewChannelHandler(c *gin.Context) {
-	logger := logs.NewLogger("[POST] /channels")
+	logger := h.Logger
 
 	if !h.Conf.Server.AllowCreateNewChannels {
 		logger.Errorf("not allowed to create new channels")
