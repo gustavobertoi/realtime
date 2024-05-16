@@ -1,0 +1,27 @@
+version: '3'
+
+services:
+  realtime-postgres-db:
+    container_name: realtime-postgres-db
+    restart: on-failure
+    environment:
+      POSTGRES_USER: ${DATABASE_USER:-root}
+      POSTGRES_PASSWORD: ${DATABASE_PASS:-toor}
+      POSTGRES_DB: ${DATABASE_NAME:-realtime-v1}
+    image: postgres:alpine
+    ports:
+      - ${POSTGRES_PORT:-5432}:5432
+    volumes:
+      - realtime-postgres-volume:/var/lib/postgresql/data
+    networks:
+      - realtime-network
+
+volumes:
+  realtime-postgres-volume:
+    driver: local
+
+networks:
+  realtime-network:
+    external: true
+    name: realtime-network
+    driver: bridge

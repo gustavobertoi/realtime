@@ -5,11 +5,11 @@ build:
 run:
 	@./bin/realtime
 
-up:
-	docker-compose up -d
+migrateup:
+	atlas migrate apply -u "${DATABASE_URL}" --dir=file://internal/database/migrations
 
-down:
-	docker-compose down
+migratehash:
+	atlas migrate hash --dir=file://internal/database/migrations
 
-logs:
-	docker-compose logs -f
+migratenew:
+	atlas migrate new "${NAME}" --dir=file://internal/database/migrations

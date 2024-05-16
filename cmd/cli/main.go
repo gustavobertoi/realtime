@@ -1,11 +1,11 @@
 package main
 
 import (
+	"context"
 	"log"
 
 	"github.com/common-nighthawk/go-figure"
 	"github.com/gustavobertoi/realtime/internal/database"
-	"github.com/gustavobertoi/realtime/internal/database/migrations"
 	"github.com/spf13/cobra"
 )
 
@@ -22,12 +22,21 @@ var migrationUp = &cobra.Command{
 	Use:   "migrate:up",
 	Short: "Create all migrations",
 	Run: func(cmd *cobra.Command, args []string) {
-		db, err := database.NewTursoDB()
+		figure.NewFigure("Realtime", "isometric1", true).Print()
+		ctx := context.Background()
+		client, err := database.NewClient(ctx)
 		if err != nil {
 			log.Fatal(err)
 		}
-		defer db.Close()
-		if err := migrations.MigrationUp(db); err != nil {
+		defer client.Close(ctx)
+		migrations, err := database.NewMigrations(client.GetConn())
+		if err != nil {
+			log.Fatal(err)
+		}
+		if err := migrations.Init(ctx); err != nil {
+			log.Fatal(err)
+		}
+		if err := migrations.Up(ctx); err != nil {
 			log.Fatal(err)
 		}
 	},
@@ -35,14 +44,23 @@ var migrationUp = &cobra.Command{
 
 var migrationDown = &cobra.Command{
 	Use:   "migrate:down",
-	Short: "Drop all migrations",
+	Short: "Dropping down migrations",
 	Run: func(cmd *cobra.Command, args []string) {
-		db, err := database.NewTursoDB()
+		figure.NewFigure("Realtime", "isometric1", true).Print()
+		ctx := context.Background()
+		client, err := database.NewClient(ctx)
 		if err != nil {
 			log.Fatal(err)
 		}
-		defer db.Close()
-		if err := migrations.MigrationDown(db); err != nil {
+		defer client.Close(ctx)
+		migrations, err := database.NewMigrations(client.GetConn())
+		if err != nil {
+			log.Fatal(err)
+		}
+		if err := migrations.Init(ctx); err != nil {
+			log.Fatal(err)
+		}
+		if err := migrations.Down(ctx); err != nil {
 			log.Fatal(err)
 		}
 	},
