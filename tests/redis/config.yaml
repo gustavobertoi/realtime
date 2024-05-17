@@ -8,15 +8,15 @@ server:
 pubsub:
   driver: "REDIS"
   redis:
-    url: "redis://default:realtime@localhost:6379"
+    url: "redis://default:realtime@realtime-redis:6379"
 
 channels:
   my-chat-example:
     id: "742fc7fe-1527-4184-8945-10b30bf01347"
     type: "WS"
-    max_of_channel_connections: 100
+    max_of_channel_connections: 100000
 
   my-notification-example:
     id: "f71a6fb5-8962-48f4-a0dd-5cf60c42a70f"
     type: "SSE"
-    max_of_channel_connections: 100
+    max_of_channel_connections: 100000

@@ -3,18 +3,25 @@ version: "3"
 services:
   realtime:
     image: "ghcr.io/gustavobertoi/realtime:latest"
+    restart: unless-stopped
+    container_name: redis-realtime
     environment:
       APP_DEBUG: "1"
-      GIN_MODE: "debug"
+      GIN_MODE: "release"
+      CONFIG_FOLDER_PATH: /app/config.yaml
     ports:
-      - 4567:4567
+      - 8080:4567
     networks:
       - realtime-network
+    volumes:
+      - ./config.yaml:/app/config.yaml
     depends_on:
       - realtime-redis
 
   realtime-redis:
     image: "bitnami/redis:latest"
+    container_name: realtime-redis
+    restart: unless-stopped
     environment:
       REDIS_PASSWORD: realtime
     ports:

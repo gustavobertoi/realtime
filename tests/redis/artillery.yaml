@@ -1,0 +1,35 @@
+config:
+  target: "ws://localhost:8080/api/v1/channels"
+  phases:
+    - duration: 300 # The duration of this phase in seconds (300 seconds = 5 minutes)
+      arrivalRate: 50 # Start with 50 new virtual users per second
+      rampTo: 100 # Gradually increase to 100 new virtual users per second over the 5 minutes
+  variables:
+    channelId: "742fc7fe-1527-4184-8945-10b30bf01347"
+
+scenarios:
+  - engine: ws
+    name: Massive Test with Random Messages
+    flow:
+      - connect: "{{ target }}/{{ channelId }}"
+      - loop:
+          - send:
+              data: '{ "message": "{{ randomString() }}" }'
+          - think: 1
+        count: 1000 # Each virtual user will send 1000 messages
+
+  - engine: ws
+    name: Receive Messages
+    flow:
+      - connect: "{{ target }}/{{ channelId }}"
+      - loop:
+          - receive:
+              match: ".*"
+          - think: 1
+        count: 1000 # Each virtual user will receive 1000 messages
+
+plugins:
+  random:
+    - function: randomString
+      args:
+        length: 10

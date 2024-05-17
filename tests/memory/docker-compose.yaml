@@ -1,0 +1,22 @@
+version: "3"
+
+services:
+  realtime:
+    image: "ghcr.io/gustavobertoi/realtime:latest"
+    restart: unless-stopped
+    container_name: memory-realtime
+    environment:
+      APP_DEBUG: "1"
+      GIN_MODE: "release"
+      CONFIG_FOLDER_PATH: /app/config.yaml
+    ports:
+      - 8080:4567
+    volumes:
+      - ./config.yaml:/app/config.yaml
+    networks:
+      - realtime-network
+
+networks:
+  realtime-network:
+    external: true
+    driver: bridge
