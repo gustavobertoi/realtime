@@ -1,9 +1,9 @@
 config:
-  target: "ws://localhost:8080/api/v1/channels"
+  target: "ws://localhost:4567/api/v1/channels"
   phases:
-    - duration: 300 # The duration of this phase in seconds (300 seconds = 5 minutes)
-      arrivalRate: 50 # Start with 50 new virtual users per second
-      rampTo: 100 # Gradually increase to 100 new virtual users per second over the 5 minutes
+    - duration: 60
+      arrivalRate: 50
+      rampTo: 100
   variables:
     channelId: "742fc7fe-1527-4184-8945-10b30bf01347"
 

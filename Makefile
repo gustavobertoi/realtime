@@ -5,6 +5,3 @@ build:
 run:
 	@go build -o bin/realtime cmd/api/main.go
 	@./bin/realtime
-
-artillery:
-	artillery run ${ARTILLERY_PATH} --record --key ${ARTILLERY_API_KEY}

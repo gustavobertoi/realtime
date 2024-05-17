@@ -10,3 +10,5 @@ tests/**/**.yaml
 .env
 
 *.log
+
+tests/artifacts.json
