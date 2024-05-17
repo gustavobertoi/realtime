@@ -2,14 +2,10 @@ bin/
 .idea/
 tmp/
 
-examples/memory/**.yaml
-!examples/memory/memory.config.yaml
-
-examples/redis/**.yaml
-!examples/redis/redis.config.yaml
-
-examples/upstash/**.yaml
-!examples/upstash/upstash.config.yaml
+tests/**/**.yaml
+!tests/**/config.yaml
+!tests/**/artillery.yaml
+!tests/**/docker-compose.yaml
 
 .env
 

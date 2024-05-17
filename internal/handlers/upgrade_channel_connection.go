@@ -34,10 +34,11 @@ func (h *Handler) UpgradeChannelConnectionHandler(c *gin.Context) {
 	userAgent := c.Request.UserAgent()
 
 	client := channels.NewClient(&dtos.CreateClientDTO{
-		ID:        c.Query("clientId"),
-		ChannelID: channel.ID,
-		UserAgent: userAgent,
-		IPAddress: ip,
+		ID:            c.Query("clientId"),
+		ChannelID:     channel.ID,
+		UserAgent:     userAgent,
+		IPAddress:     ip,
+		MaxOfMessages: 100,
 	})
 
 	if channel.HasClient(client) {

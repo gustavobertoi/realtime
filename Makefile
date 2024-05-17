@@ -3,13 +3,8 @@ build:
 	@go build -o bin/cli cmd/cli/main.go
 
 run:
+	@go build -o bin/realtime cmd/api/main.go
 	@./bin/realtime
 
-migrateup:
-	atlas migrate apply -u "${DATABASE_URL}" --dir=file://internal/database/migrations
-
-migratehash:
-	atlas migrate hash --dir=file://internal/database/migrations
-
-migratenew:
-	atlas migrate new "${NAME}" --dir=file://internal/database/migrations
+artillery:
+	artillery run ${ARTILLERY_PATH} --record --key ${ARTILLERY_API_KEY}

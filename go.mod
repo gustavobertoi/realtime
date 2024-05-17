@@ -11,12 +11,8 @@ require (
 	github.com/gorilla/websocket v1.5.0
 	github.com/segmentio/kafka-go v0.4.47
 	github.com/spf13/cobra v1.8.0
+	github.com/theritikchoure/logx v1.1.0
 	gopkg.in/yaml.v2 v2.4.0
-)
-
-require (
-	github.com/pkg/errors v0.9.1 // indirect
-	github.com/theritikchoure/logx v1.1.0 // indirect
 )
 
 require (
@@ -34,8 +30,7 @@ require (
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20221227161230-091c0ba34f0a // indirect
-	github.com/jackc/pgx v3.6.2+incompatible
-	github.com/jackc/pgx/v5 v5.5.5 // indirect
+	github.com/jackc/pgx/v5 v5.5.5
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.15.11 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.5 // indirect

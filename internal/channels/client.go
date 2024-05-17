@@ -13,16 +13,16 @@ type Client struct {
 	msgChan   chan *Message
 }
 
-func NewClient(data *dtos.CreateClientDTO) *Client {
-	if data.ID == "" {
-		data.ID = uuid.NewUUID()
+func NewClient(dto *dtos.CreateClientDTO) *Client {
+	if dto.ID == "" {
+		dto.ID = uuid.NewUUID()
 	}
 	client := &Client{
-		ID:        data.ID,
-		ChannelID: data.ChannelID,
-		UserAgent: data.UserAgent,
-		IPAddress: data.IPAddress,
-		msgChan:   make(chan *Message),
+		ID:        dto.ID,
+		ChannelID: dto.ChannelID,
+		UserAgent: dto.UserAgent,
+		IPAddress: dto.IPAddress,
+		msgChan:   make(chan *Message, dto.MaxOfMessages),
 	}
 	return client
 }

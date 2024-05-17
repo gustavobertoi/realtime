@@ -3,8 +3,9 @@ package config
 import (
 	"context"
 	"errors"
-	"log"
+	"fmt"
 	"os"
+	"strings"
 
 	"github.com/gustavobertoi/realtime/internal/channels"
 	"github.com/gustavobertoi/realtime/internal/dtos"
@@ -54,28 +55,18 @@ func GetConfig() (*Config, error) {
 			RenderNotificationsHTML: false,
 		},
 		PubSub:   memoryPubSub,
-		Channels: make(map[string]*channels.Channel),
+		Channels: make(map[string]*channels.Channel, 100),
 	}
 
-	yamlConfig, err := getConfigFromYaml()
-	if err != nil {
-		log.Printf("error reading yaml config (using default one): %s", err)
-		return config, nil
-	}
-
-	config.Server = yamlConfig.Server
-
-	pubsub, err := pubsub.NewPubSub(context.Background(), yamlConfig.PubSub)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, channelDTO := range yamlConfig.Channels {
-		channel, err := channels.NewChannel(channelDTO, pubsub.Consumer, pubsub.Producer)
+	yamlPath := strings.TrimSpace(os.Getenv("CONFIG_FOLDER_PATH"))
+	if yamlPath != "" {
+		yamlConfig, err := getConfigFromYaml(yamlPath)
 		if err != nil {
 			return nil, err
 		}
-		config.SetChannel(channel)
+		if err := buildConfigFromYaml(yamlConfig, config); err != nil {
+			return nil, err
+		}
 	}
 
 	return config, nil
@@ -97,19 +88,34 @@ func (c *Config) SetChannel(channel *channels.Channel) {
 	c.Channels[channel.ID] = channel
 }
 
-func getConfigFromYaml() (*YamlConfig, error) {
-	filePath := os.Getenv("CONFIG_FOLDER_PATH")
-	if filePath != "" {
-		file, err := os.ReadFile(filePath)
-		if err != nil {
-			return nil, err
-		}
-		var schema YamlConfig
-		err = yaml.Unmarshal(file, &schema)
-		if err != nil {
-			return nil, err
-		}
-		return &schema, nil
+func getConfigFromYaml(yamlPath string) (*YamlConfig, error) {
+	if _, err := os.Stat(yamlPath); err != nil {
+		return nil, fmt.Errorf("yaml config file not found path=%s", yamlPath)
 	}
-	return nil, ErrYamlConfigNotDeclared
+	file, err := os.ReadFile(yamlPath)
+	if err != nil {
+		return nil, err
+	}
+	var schema YamlConfig
+	err = yaml.Unmarshal(file, &schema)
+	if err != nil {
+		return nil, err
+	}
+	return &schema, nil
+}
+
+func buildConfigFromYaml(yamlConfig *YamlConfig, config *Config) error {
+	config.Server = yamlConfig.Server
+	pubsub, err := pubsub.NewPubSub(context.Background(), yamlConfig.PubSub)
+	if err != nil {
+		return err
+	}
+	for _, channelDTO := range yamlConfig.Channels {
+		channel, err := channels.NewChannel(channelDTO, pubsub.Consumer, pubsub.Producer)
+		if err != nil {
+			return err
+		}
+		config.SetChannel(channel)
+	}
+	return nil
 }

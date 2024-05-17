@@ -30,27 +30,31 @@ func ServerSentEventsHandler(c *gin.Context, conf *config.Config, channel *chann
 				return
 			case msg := <-msgChan:
 				logger.Infof("serializing and writing msg %s to client %s", msg.ID, client.ID)
-				if msg.ClientID != client.ID {
-					msgStr, err := msg.MessageToJSON()
-					if err != nil {
-						logger.Errorf("error serializing msg %s to json, err: %v", msg.ID, err)
-						break
-					}
-					message := fmt.Sprintf("data: %s\n\n", msgStr)
-					_, err = c.Writer.WriteString(message)
-					if err != nil {
-						logger.Errorf("error writing msg %s on buffer, err: %v", msg.ID, err)
-						break
-					}
-					c.Writer.Flush()
-					logger.Infof("msg %s was written to buffer for client %s", msg.ID, client.ID)
-					time.Sleep(1 * time.Second)
-				} else {
-					logger.Warnf("not writing self msg %s to client %s", msg.ID, client.ID)
+				if msg.ClientID == client.ID {
+					logger.Warnf("msg %s was sent by the same client %s, skipping", msg.ID, client.ID)
+					break
 				}
+
+				msgStr, err := msg.MessageToJSON()
+				if err != nil {
+					logger.Errorf("error serializing msg %s to json, err: %v", msg.ID, err)
+					break
+				}
+
+				message := fmt.Sprintf("data: %s\n\n", msgStr)
+				_, err = c.Writer.WriteString(message)
+				if err != nil {
+					logger.Errorf("error writing msg %s on buffer, err: %v", msg.ID, err)
+					break
+				}
+
+				c.Writer.Flush()
+				logger.Infof("msg %s was written to buffer for client %s", msg.ID, client.ID)
+				time.Sleep(250 * time.Millisecond)
 			}
 		}
 	}()
 
 	wg.Wait()
+	close(msgChan)
 }

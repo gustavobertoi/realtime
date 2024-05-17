@@ -13,7 +13,7 @@ type MemoryAdapter struct {
 
 func NewMemoryAdapter() (*PubSub, error) {
 	ma := &MemoryAdapter{
-		msgCh: make(chan *channels.Message),
+		msgCh: make(chan *channels.Message, 100),
 	}
 	go ma.sendMessageToAllClientsHandler()
 	return &PubSub{
