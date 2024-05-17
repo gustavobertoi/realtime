@@ -22,14 +22,6 @@ func main() {
 		r.Use(cors.Default())
 	}
 
-	if c.Server.RenderChatHTML {
-		r.Static("/web/chat", "./web/chat")
-	}
-
-	if c.Server.RenderNotificationsHTML {
-		r.Static("/web/notifications", "./web/notifications")
-	}
-
 	apiV1 := r.Group("/api/v1")
 
 	apiV1.GET("/health", func(ctx *gin.Context) {

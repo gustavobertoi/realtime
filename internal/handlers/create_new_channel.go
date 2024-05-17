@@ -11,14 +11,6 @@ import (
 func (h *Handler) CreateNewChannelHandler(c *gin.Context) {
 	logger := h.Logger
 
-	if !h.Conf.Server.AllowCreateNewChannels {
-		logger.Errorf("not allowed to create new channels")
-		c.IndentedJSON(http.StatusForbidden, gin.H{
-			"message": "server are not allowed to create new channels",
-		})
-		return
-	}
-
 	var dto = &dtos.CreateChannelDTO{}
 	err := c.ShouldBindJSON(&dto)
 	if err != nil {

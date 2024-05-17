@@ -49,10 +49,7 @@ func GetConfig() (*Config, error) {
 		Debug: os.Getenv("APP_DEBUG") == "1",
 		Store: store.NewMemoryStore(),
 		Server: &dtos.ServerConfig{
-			AllowCreateNewChannels:  true,
-			AllowPushServerMessages: true,
-			RenderChatHTML:          false,
-			RenderNotificationsHTML: false,
+			AllowAllOrigins: true,
 		},
 		PubSub:   memoryPubSub,
 		Channels: make(map[string]*channels.Channel, 100),
